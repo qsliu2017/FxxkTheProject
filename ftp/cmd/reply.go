@@ -31,7 +31,7 @@ const (
 	SYNTAX_ERROR    = 500
 	_               = 501
 	_               = 502
-	_               = 503
+	BAD_SEQUENCE    = 503
 	_               = 504
 	NOT_LOGIN       = 530
 	_               = 532

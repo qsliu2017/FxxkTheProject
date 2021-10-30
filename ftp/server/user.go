@@ -3,14 +3,17 @@ package server
 import (
 	"bytes"
 	"crypto/sha256"
+	"hash"
 )
 
 var (
-	_USERS  map[string]string = make(map[string]string) //map[username]hash_password
-	_HASHER                   = sha256.New()
+	_USERS  map[string]string //map[username]hash_password
+	_HASHER hash.Hash
 )
 
 func init() {
+	_USERS = make(map[string]string)
+	_HASHER = sha256.New()
 	addUser("test", "test")
 	addUser("pikachu", "winnie")
 }

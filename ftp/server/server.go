@@ -71,15 +71,36 @@ func handleConn(conn net.Conn) {
 				ftp.reply(200, "Command okay.")
 			}
 		case strings.HasPrefix(command, "USER"):
+			log.Println("Accept command USER")
 			var username string
-			if ftp._TestSyntax(command, cmd.USER, username) {
+			if ftp._TestSyntax(command, cmd.USER, &username) {
+				log.Println("Parse command USER with username", username)
 				if ftp.login {
 					ftp.reply(cmd.LOGIN_PROCEED, "User logged in, proceed")
 				} else if hasUser(username) {
-					ftp.reply(cmd.USERNAME_OK, "User name okay, need password")
+					ftp.username = username
+					ftp.reply(cmd.USERNAME_OK, "User name okay, need password.")
 				} else {
-					ftp.reply(cmd.NOT_LOGIN, "Not Logged in")
+					ftp.username = ""
+					ftp.reply(cmd.NEED_ACCOUNT, "Need account for login.")
+				}
+			}
+		case strings.HasPrefix(command, "PASS"):
+			if ftp.login {
 
+			} else if ftp.username == "" {
+				ftp.reply(cmd.BAD_SEQUENCE, "Bad sequence of commands.")
+			} else {
+				var password string
+				if ftp._TestSyntax(command, cmd.PASS, &password) {
+					if testUser(ftp.username, password) {
+						ftp.login = true
+						ftp.reply(cmd.LOGIN_PROCEED, "User logged in, proceed.")
+					} else {
+						ftp.login = false
+						ftp.username = ""
+						ftp.reply(cmd.NOT_LOGIN, "Not logged in.")
+					}
 				}
 			}
 		}
