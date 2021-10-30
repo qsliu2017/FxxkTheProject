@@ -68,7 +68,7 @@ func handleConn(conn net.Conn) {
 			}
 		case strings.HasPrefix(command, "NOOP"):
 			if ftp._TestSyntax(command, cmd.NOOP) {
-				ftp.reply(200, "Okay")
+				ftp.reply(200, "Command okay.")
 			}
 		case strings.HasPrefix(command, "USER"):
 			var username string
