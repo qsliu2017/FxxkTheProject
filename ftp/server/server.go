@@ -103,6 +103,24 @@ func handleConn(conn net.Conn) {
 					}
 				}
 			}
+		case strings.HasPrefix(command, "PORT"):
+			if ftp.login {
+				var h1, h2, h3, h4, p1, p2 byte
+				if ftp._TestSyntax(command, cmd.PORT, &h1, &h2, &h3, &h4, &p1, &p2) {
+					ftp.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
+						IP:   net.IPv4(h1, h2, h3, h4),
+						Port: int(p1)*256 + int(p2),
+					})
+					if err != nil {
+
+					} else {
+						ftp.reply(cmd.OK, "Command okay.")
+					}
+				}
+
+			} else {
+				ftp.reply(cmd.NOT_LOGIN, "Not logged in.")
+			}
 		}
 	}
 }

@@ -108,3 +108,45 @@ func Test_Pass_with_invalid_account(t *testing.T) {
 	c.Write([]byte(fmt.Sprintf(cmd.PASS, "winnie")))
 	assertReply(t, c, "503 Bad sequence of commands.\r\n", "test pass bad sequence error")
 }
+
+func Test_Port_without_login(t *testing.T) {
+	c := setupConn(t)
+	defer endupConn(t, c)
+
+	c.Write([]byte(fmt.Sprintf(cmd.PORT, 0, 0, 0, 0, 0, 0)))
+	assertReply(t, c, "530 Not logged in.\r\n", "test port with login error")
+}
+
+func Test_Port(t *testing.T) {
+	c := setupConn(t)
+	defer endupConn(t, c)
+
+	c.Write([]byte(fmt.Sprintf(cmd.USER, "test")))
+	assertReply(t, c, "331 User name okay, need password.\r\n", "test valid user name error")
+	c.Write([]byte(fmt.Sprintf(cmd.PASS, "test")))
+	assertReply(t, c, "230 User logged in, proceed.\r\n", "test valid account error")
+
+	// Client listens on a port
+	dataConn, err := net.Listen("tcp", ":5456")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dataConn.Close()
+
+	accept := make(chan struct{})
+	go func() {
+		conn, err := dataConn.Accept()
+		if err != nil {
+			t.Log(err)
+		}
+		defer conn.Close()
+		accept <- struct{}{}
+	}()
+
+	// Client sends the port to server
+	c.Write([]byte(fmt.Sprintf(cmd.PORT, 127, 0, 0, 1, 21, 80)))
+	assertReply(t, c, "200 Command okay.\r\n", "test port error")
+	if _, has := <-accept; !has {
+		t.Error("data port not accept any connection")
+	}
+}
