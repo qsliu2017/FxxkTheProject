@@ -59,68 +59,12 @@ func handleConn(conn net.Conn) {
 			log.Println(err)
 			return
 		}
-		command := string(buf[:n])
-		switch {
-		case strings.HasPrefix(command, "QUIT"):
-			if ftp._TestSyntax(command, cmd.QUIT) {
-				ftp.reply(cmd.CTRL_CONN_CLOSE, "Service closing control connection.")
-				return
-			}
-		case strings.HasPrefix(command, "NOOP"):
-			if ftp._TestSyntax(command, cmd.NOOP) {
-				ftp.reply(200, "Command okay.")
-			}
-		case strings.HasPrefix(command, "USER"):
-			log.Println("Accept command USER")
-			var username string
-			if ftp._TestSyntax(command, cmd.USER, &username) {
-				log.Println("Parse command USER with username", username)
-				if ftp.login {
-					ftp.reply(cmd.LOGIN_PROCEED, "User logged in, proceed")
-				} else if hasUser(username) {
-					ftp.username = username
-					ftp.reply(cmd.USERNAME_OK, "User name okay, need password.")
-				} else {
-					ftp.username = ""
-					ftp.reply(cmd.NEED_ACCOUNT, "Need account for login.")
-				}
-			}
-		case strings.HasPrefix(command, "PASS"):
-			if ftp.login {
-
-			} else if ftp.username == "" {
-				ftp.reply(cmd.BAD_SEQUENCE, "Bad sequence of commands.")
-			} else {
-				var password string
-				if ftp._TestSyntax(command, cmd.PASS, &password) {
-					if testUser(ftp.username, password) {
-						ftp.login = true
-						ftp.reply(cmd.LOGIN_PROCEED, "User logged in, proceed.")
-					} else {
-						ftp.login = false
-						ftp.username = ""
-						ftp.reply(cmd.NOT_LOGIN, "Not logged in.")
-					}
-				}
-			}
-		case strings.HasPrefix(command, "PORT"):
-			if ftp.login {
-				var h1, h2, h3, h4, p1, p2 byte
-				if ftp._TestSyntax(command, cmd.PORT, &h1, &h2, &h3, &h4, &p1, &p2) {
-					ftp.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
-						IP:   net.IPv4(h1, h2, h3, h4),
-						Port: int(p1)*256 + int(p2),
-					})
-					if err != nil {
-
-					} else {
-						ftp.reply(cmd.OK, "Command okay.")
-					}
-				}
-
-			} else {
-				ftp.reply(cmd.NOT_LOGIN, "Not logged in.")
-			}
+		commandline := string(buf[:n])
+		command := commandline[:4]
+		if handler, has := commandHandlers[command]; has {
+			ftp._TestSyntax(commandline, handler.ArgsPattern, handler.Args...)
+			handler.Handler(&ftp, handler.Args...)
+			continue
 		}
 	}
 }
