@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ftp/cmd"
 	"net"
+	"os"
 	"strings"
 	"testing"
 )
@@ -156,6 +157,70 @@ func Test_Port(t *testing.T) {
 		assertReply(t, c, "200 Command okay.\r\n", "test port error")
 		if _, has := <-accept; !has {
 			t.Error("data port not accept any connection")
+		}
+	})
+}
+
+func Test_Stor(t *testing.T) {
+	t.Run("not login", func(t *testing.T) {
+		c := setupConn(t)
+		defer teardownConn(t, c)
+
+		c.Write([]byte(fmt.Sprintf(cmd.STOR, "test.txt")))
+		assertReply(t, c, "532 Need account for storing files.\r\n", "test stor with login error")
+	})
+
+	t.Run("data connect", func(t *testing.T) {
+		c := setupConn(t)
+		defer teardownConn(t, c)
+
+		c.Write([]byte(fmt.Sprintf(cmd.USER, "test")))
+		assertReply(t, c, "331 User name okay, need password.\r\n", "test valid user name error")
+		c.Write([]byte(fmt.Sprintf(cmd.PASS, "test")))
+		assertReply(t, c, "230 User logged in, proceed.\r\n", "test valid account error")
+
+		c.Write([]byte(fmt.Sprintf(cmd.STOR, "test.txt")))
+		assertReply(t, c, "150 File status okay; about to open data connection.\r\n", "")
+
+		dataConn, err := net.Listen("tcp", ":5456")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer dataConn.Close()
+
+		accept := make(chan net.Conn)
+		go func() {
+			conn, err := dataConn.Accept()
+			if err != nil {
+				t.Log(err)
+			}
+			accept <- conn
+		}()
+
+		// Client sends the port to server
+		c.Write([]byte(fmt.Sprintf(cmd.PORT, 127, 0, 0, 1, 21, 80)))
+		assertReply(t, c, "200 Command okay.\r\n", "test port error")
+		dataChan, has := <-accept
+		if !has {
+			t.Error("data port not accept any connection")
+		}
+
+		c.Write([]byte(fmt.Sprintf(cmd.STOR, "test.txt")))
+		assertReply(t, c, "125 Data connection already open; transfer starting.\r\n", "")
+
+		dataChan.Write([]byte("test data\r\n"))
+		dataChan.Close()
+		assertReply(t, c, "250 Requested file action okay, completed.\r\n", "")
+
+		f, _ := os.Open("test.txt")
+		defer func() {
+			f.Close()
+			os.Remove("test.txt")
+		}()
+		buffer := make([]byte, 32)
+		n, _ := f.Read(buffer)
+		if strings.Compare(string(buffer[:n]), "test data\r\n") != 0 {
+			t.Error("data not match")
 		}
 	})
 }

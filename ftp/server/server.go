@@ -62,9 +62,11 @@ func handleConn(conn net.Conn) {
 		commandline := string(buf[:n])
 		command := commandline[:4]
 		if handler, has := commandHandlers[command]; has {
-			ftp._TestSyntax(commandline, handler.ArgsPattern, handler.Args...)
-			handler.Handler(&ftp, handler.Args...)
-			continue
+			if ftp._TestSyntax(commandline, handler.ArgsPattern, handler.Args...) {
+				handler.Handler(&ftp, handler.Args...)
+			}
+		} else {
+			ftp.reply(cmd.SYNTAX_ERROR, "Syntax error, command unrecognized.")
 		}
 	}
 }
@@ -78,7 +80,7 @@ func (conn FtpConn) reply(code int, msg string) error {
 }
 
 func (conn FtpConn) _SyntaxError() error {
-	return conn.reply(cmd.SYNTAX_ERROR, "Syntax error\r\n")
+	return conn.reply(cmd.SYNTAX_ERROR_IN_PARAM, "Syntax error in parameters or arguments.")
 }
 
 func (conn FtpConn) _TestSyntax(cmd, syntax string, val ...interface{}) bool {

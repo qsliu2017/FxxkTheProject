@@ -3,6 +3,7 @@ package server
 import (
 	"ftp/cmd"
 	"net"
+	"os"
 )
 
 type RequestHandler func(conn *FtpConn, args ...interface{}) error
@@ -49,6 +50,13 @@ func init() {
 		Handler:     portHandler,
 		ArgsPattern: cmd.PORT,
 		Args:        []interface{}{&port_h1, &port_h2, &port_h3, &port_h4, &port_p1, &port_p2},
+	}
+
+	var stor_pathname string
+	commandHandlers["STOR"] = commandHandler{
+		Handler:     storHandler,
+		ArgsPattern: cmd.STOR,
+		Args:        []interface{}{&stor_pathname},
 	}
 }
 
@@ -105,4 +113,35 @@ var portHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error 
 	} else {
 		return conn.reply(cmd.NOT_LOGIN, "Not logged in.")
 	}
+}
+
+var storHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+	if !conn.login {
+		return conn.reply(cmd.NEED_ACCOUNT_FOR_STOR, "Need account for storing files.")
+	}
+
+	if conn.data == nil {
+		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
+	}
+
+	f, err := os.OpenFile(*args[0].(*string), os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		//TODO: handle error
+		return nil
+	}
+	defer f.Close()
+	conn.reply(cmd.ALREADY_OPEN, cmd.GetCodeMessage(cmd.ALREADY_OPEN))
+
+	buffer := make([]byte, 1024)
+	count := 0
+	for {
+		n, err := conn.data.Read(buffer)
+		if err != nil {
+			return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
+		}
+		count += n
+		f.Write(buffer[:n])
+	}
+
+	return nil
 }
