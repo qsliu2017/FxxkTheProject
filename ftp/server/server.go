@@ -8,7 +8,16 @@ import (
 	"strings"
 )
 
-type FtpConn struct {
+type FtpServer interface {
+	Listen(port int) (string, error)
+	Close() (string, error)
+}
+
+func NewFtpServer() FtpServer {
+	return nil
+}
+
+type ftpConn struct {
 	ctrl     net.Conn
 	data     net.Conn
 	username string
@@ -47,7 +56,7 @@ func handleConn(conn net.Conn) {
 		conn.Close()
 		log.Println("Close connect", conn.RemoteAddr().String())
 	}()
-	ftp := FtpConn{
+	ftp := ftpConn{
 		ctrl: conn,
 		data: nil,
 	}
@@ -71,7 +80,7 @@ func handleConn(conn net.Conn) {
 	}
 }
 
-func (conn FtpConn) reply(code int, msg string) error {
+func (conn ftpConn) reply(code int, msg string) error {
 	if strings.Contains(msg, "\r\n") {
 		return fmt.Errorf("multiline msg not implement")
 	}
@@ -79,11 +88,11 @@ func (conn FtpConn) reply(code int, msg string) error {
 	return err
 }
 
-func (conn FtpConn) _SyntaxError() error {
+func (conn ftpConn) _SyntaxError() error {
 	return conn.reply(cmd.SYNTAX_ERROR_IN_PARAM, "Syntax error in parameters or arguments.")
 }
 
-func (conn FtpConn) _TestSyntax(cmd, syntax string, val ...interface{}) bool {
+func (conn ftpConn) _TestSyntax(cmd, syntax string, val ...interface{}) bool {
 	_, err := fmt.Sscanf(cmd, syntax, val...)
 	if err != nil {
 		conn._SyntaxError()

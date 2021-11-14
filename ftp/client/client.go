@@ -1,37 +1,42 @@
 package client
 
-import (
-	"bytes"
-	"fmt"
-	"ftp/cmd"
-	"log"
-	"net"
-)
-
-func CtrlConnect(addr string) {
-	ctrlConn, err := net.Dial("tcp", addr)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer ctrlConn.Close()
-	ctrlConn.Write([]byte(fmt.Sprintf(cmd.NOOP)))
-	log.Println("sending NOOP")
-	printResp(ctrlConn)
-	ctrlConn.Write([]byte(fmt.Sprintf(cmd.QUIT)))
-	log.Println("sending QUIT")
-	printResp(ctrlConn)
+type Client interface {
+	Login(username, password string) (string, error)
+	Logout() (string, error)
+	Mode(mode int) (string, error)
+	Store(local, remote string) (string, error)
+	Retrieve(local, remote string) (string, error)
 }
 
-func printResp(conn net.Conn) {
-	buf := make([]byte, 64)
-	for {
-		n, _ := conn.Read(buf)
-		resp := buf[:n]
-		log.Println(resp)
-		print(string(buf))
-		if bytes.HasSuffix(resp, []byte("\r\n")) {
-			return
-		}
-	}
+func NewClient(addr string) Client {
+	return nil
+}
+
+var _ Client = (*clientImpl)(nil)
+
+type clientImpl struct{}
+
+func (*clientImpl) Login(username, password string) (string, error) {
+	return "", nil
+}
+
+func (*clientImpl) Logout() (string, error) {
+	return "", nil
+}
+
+const (
+	ModeStream = iota
+	ModeCompressed
+)
+
+func (*clientImpl) Mode(mode int) (string, error) {
+	return "", nil
+}
+
+func (*clientImpl) Store(local, remote string) (string, error) {
+	return "", nil
+}
+
+func (*clientImpl) Retrieve(local, remote string) (string, error) {
+	return "", nil
 }

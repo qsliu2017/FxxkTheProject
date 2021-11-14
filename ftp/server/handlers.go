@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type RequestHandler func(conn *FtpConn, args ...interface{}) error
+type RequestHandler func(conn *ftpConn, args ...interface{}) error
 
 type commandHandler struct {
 	Handler     RequestHandler
@@ -60,15 +60,15 @@ func init() {
 	}
 }
 
-var quitHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var quitHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	return conn.reply(cmd.CTRL_CONN_CLOSE, "Service closing control connection.")
 }
 
-var noopHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var noopHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	return conn.reply(cmd.OK, "Command okay.")
 }
 
-var userHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var userHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	if conn.login {
 		return conn.reply(cmd.LOGIN_PROCEED, "User logged in, proceed")
 	} else if username, ok := args[0].(*string); ok && hasUser(*username) {
@@ -80,7 +80,7 @@ var userHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error 
 	}
 }
 
-var passHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var passHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	if conn.login {
 		// do something
 		return nil
@@ -98,7 +98,7 @@ var passHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error 
 	}
 }
 
-var portHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var portHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	if conn.login {
 		var err error
 		conn.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -115,7 +115,7 @@ var portHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error 
 	}
 }
 
-var storHandler RequestHandler = func(conn *FtpConn, args ...interface{}) error {
+var storHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
 	if !conn.login {
 		return conn.reply(cmd.NEED_ACCOUNT_FOR_STOR, "Need account for storing files.")
 	}
