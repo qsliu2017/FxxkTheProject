@@ -1,6 +1,6 @@
 package client
 
-type Client interface {
+type FtpClient interface {
 	Login(username, password string) (string, error)
 	Logout() (string, error)
 	Mode(mode int) (string, error)
@@ -8,11 +8,11 @@ type Client interface {
 	Retrieve(local, remote string) (string, error)
 }
 
-func NewClient(addr string) Client {
+func NewFtpClient(addr string) FtpClient {
 	return nil
 }
 
-var _ Client = (*clientImpl)(nil)
+var _ FtpClient = (*clientImpl)(nil)
 
 type clientImpl struct{}
 
