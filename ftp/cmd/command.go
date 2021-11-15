@@ -31,7 +31,7 @@ const (
 
 	// MODE<SP><mode-code><CRLF>
 	//  <mode-code>::=S|B|C
-	MODE = "MODE %d\r\n"
+	MODE = "MODE %c\r\n"
 
 	// STRU<SP><structure-code><CRLF>
 	//  <structure-code>::=F|R|P

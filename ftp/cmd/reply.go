@@ -33,7 +33,7 @@ const (
 	SYNTAX_ERROR_IN_PARAM     = 501
 	_                         = 502
 	BAD_SEQUENCE              = 503
-	_                         = 504
+	StatusParamNotImplemented = 504
 	NOT_LOGIN                 = 530
 	NEED_ACCOUNT_FOR_STOR     = 532
 	_                         = 550
@@ -46,6 +46,7 @@ var codeMessages = map[int]string{
 	ALREADY_OPEN:              "Data connection already open; transfer starting.",
 	ABOUT_TO_DATA_CONN:        "File status okay; about to open data connection.",
 	StatusFileActionCompleted: "Requested file action okay, completed.",
+	StatusParamNotImplemented: "Command not implemented for that parameter.",
 }
 
 func GetCodeMessage(code int) string {

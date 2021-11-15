@@ -14,7 +14,14 @@ type _FtpConn struct {
 	data     net.Conn
 	username string
 	login    bool
+	mode     byte
 }
+
+const (
+	ModeStream     byte = 'S'
+	ModeBlock      byte = 'B'
+	ModeCompressed byte = 'C'
+)
 
 func handleConn(conn net.Conn) {
 	defer func() {
@@ -24,6 +31,7 @@ func handleConn(conn net.Conn) {
 	ftpConn := _FtpConn{
 		ctrl: conn,
 		data: nil,
+		mode: ModeStream,
 	}
 	ftpConn.reply(cmd.SERVICE_READY, "Service ready for new user.")
 	buf := make([]byte, 128)

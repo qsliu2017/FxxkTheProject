@@ -52,6 +52,13 @@ func init() {
 		Args:        []interface{}{&port_h1, &port_h2, &port_h3, &port_h4, &port_p1, &port_p2},
 	}
 
+	var mode_modecode byte
+	commandHandlers["MODE"] = _CommandHandler{
+		Handler:     modeHandler,
+		ArgsPattern: cmd.MODE,
+		Args:        []interface{}{&mode_modecode},
+	}
+
 	var stor_pathname string
 	commandHandlers["STOR"] = _CommandHandler{
 		Handler:     storHandler,
@@ -112,6 +119,22 @@ var portHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		}
 	} else {
 		return conn.reply(cmd.NOT_LOGIN, "Not logged in.")
+	}
+}
+
+var modeHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
+	mode := args[0].(*byte)
+	switch *mode {
+	case ModeStream:
+		conn.mode = ModeStream
+		return conn.reply(cmd.OK, "Command okay.")
+	case ModeBlock:
+		return conn.reply(cmd.StatusParamNotImplemented, cmd.GetCodeMessage(cmd.StatusParamNotImplemented))
+	case ModeCompressed:
+		conn.mode = ModeCompressed
+		return conn.reply(cmd.OK, "Command okay.")
+	default:
+		return conn.reply(cmd.SYNTAX_ERROR_IN_PARAM, "Syntax error in parameters or arguments.")
 	}
 }
 

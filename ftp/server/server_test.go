@@ -179,6 +179,25 @@ func Test_Port(t *testing.T) {
 	})
 }
 
+func Test_Mode(t *testing.T) {
+	t.Run("", func(t *testing.T) {
+		c := setupConn(t)
+		defer teardownConn(t, c)
+
+		c.Write([]byte(fmt.Sprintf(cmd.MODE, 'S')))
+		assertReply(t, c, "200 Command okay.\r\n", "test mode error")
+
+		c.Write([]byte(fmt.Sprintf(cmd.MODE, 'C')))
+		assertReply(t, c, "200 Command okay.\r\n", "test mode error")
+
+		c.Write([]byte(fmt.Sprintf(cmd.MODE, 'B')))
+		assertReply(t, c, "504 Command not implemented for that parameter.\r\n", "test mode error")
+
+		c.Write([]byte(fmt.Sprintf(cmd.MODE, 'A')))
+		assertReply(t, c, "501 Syntax error in parameters or arguments.\r\n", "test mode error")
+	})
+}
+
 func Test_Stor(t *testing.T) {
 	t.Run("not login", func(t *testing.T) {
 		c := setupConn(t)
