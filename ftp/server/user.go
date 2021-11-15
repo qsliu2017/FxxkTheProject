@@ -7,32 +7,32 @@ import (
 )
 
 var (
-	_USERS  map[string]string //map[username]hash_password
-	_HASHER hash.Hash
+	users  map[string]string //map[username]hash_password
+	hasher hash.Hash
 )
 
 func init() {
-	_USERS = make(map[string]string)
-	_HASHER = sha256.New()
+	users = make(map[string]string)
+	hasher = sha256.New()
 	addUser("test", "test")
 	addUser("pikachu", "winnie")
 }
 
 func addUser(username, password string) {
-	_HASHER.Reset()
-	_HASHER.Write([]byte(password))
-	_USERS[username] = string(_HASHER.Sum(nil))
+	hasher.Reset()
+	hasher.Write([]byte(password))
+	users[username] = string(hasher.Sum(nil))
 }
 
 func testUser(username, password string) bool {
-	_HASHER.Reset()
-	_HASHER.Write([]byte(password))
+	hasher.Reset()
+	hasher.Write([]byte(password))
 
-	pwd, has := _USERS[username]
-	return has && bytes.Equal([]byte(pwd), _HASHER.Sum(nil))
+	pwd, has := users[username]
+	return has && bytes.Equal([]byte(pwd), hasher.Sum(nil))
 }
 
 func hasUser(username string) (has bool) {
-	_, has = _USERS[username]
+	_, has = users[username]
 	return
 }

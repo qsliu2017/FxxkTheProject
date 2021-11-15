@@ -6,69 +6,69 @@ import (
 	"os"
 )
 
-type RequestHandler func(conn *ftpConn, args ...interface{}) error
+type _RequestHandler func(conn *_FtpConn, args ...interface{}) error
 
-type commandHandler struct {
-	Handler     RequestHandler
+type _CommandHandler struct {
+	Handler     _RequestHandler
 	ArgsPattern string
 	Args        []interface{}
 }
 
-var commandHandlers map[string]commandHandler
+var commandHandlers map[string]_CommandHandler
 
 func init() {
-	commandHandlers = make(map[string]commandHandler)
+	commandHandlers = make(map[string]_CommandHandler)
 
-	commandHandlers["QUIT"] = commandHandler{
+	commandHandlers["QUIT"] = _CommandHandler{
 		Handler:     quitHandler,
 		ArgsPattern: cmd.QUIT,
 		Args:        []interface{}{},
 	}
 
-	commandHandlers["NOOP"] = commandHandler{
+	commandHandlers["NOOP"] = _CommandHandler{
 		Handler:     noopHandler,
 		ArgsPattern: cmd.NOOP,
 		Args:        []interface{}{},
 	}
 
 	var user_username string
-	commandHandlers["USER"] = commandHandler{
+	commandHandlers["USER"] = _CommandHandler{
 		Handler:     userHandler,
 		ArgsPattern: cmd.USER,
 		Args:        []interface{}{&user_username},
 	}
 
 	var pass_password string
-	commandHandlers["PASS"] = commandHandler{
+	commandHandlers["PASS"] = _CommandHandler{
 		Handler:     passHandler,
 		ArgsPattern: cmd.PASS,
 		Args:        []interface{}{&pass_password},
 	}
 
 	var port_h1, port_h2, port_h3, port_h4, port_p1, port_p2 byte
-	commandHandlers["PORT"] = commandHandler{
+	commandHandlers["PORT"] = _CommandHandler{
 		Handler:     portHandler,
 		ArgsPattern: cmd.PORT,
 		Args:        []interface{}{&port_h1, &port_h2, &port_h3, &port_h4, &port_p1, &port_p2},
 	}
 
 	var stor_pathname string
-	commandHandlers["STOR"] = commandHandler{
+	commandHandlers["STOR"] = _CommandHandler{
 		Handler:     storHandler,
 		ArgsPattern: cmd.STOR,
 		Args:        []interface{}{&stor_pathname},
 	}
 }
 
-var quitHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var quitHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	return conn.reply(cmd.CTRL_CONN_CLOSE, "Service closing control connection.")
 }
 
-var noopHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var noopHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	return conn.reply(cmd.OK, "Command okay.")
 }
 
-var userHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var userHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	if conn.login {
 		return conn.reply(cmd.LOGIN_PROCEED, "User logged in, proceed")
 	} else if username, ok := args[0].(*string); ok && hasUser(*username) {
@@ -80,7 +80,7 @@ var userHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error 
 	}
 }
 
-var passHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var passHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	if conn.login {
 		// do something
 		return nil
@@ -98,7 +98,7 @@ var passHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error 
 	}
 }
 
-var portHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var portHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	if conn.login {
 		var err error
 		conn.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -115,7 +115,7 @@ var portHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error 
 	}
 }
 
-var storHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error {
+var storHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
 	if !conn.login {
 		return conn.reply(cmd.NEED_ACCOUNT_FOR_STOR, "Need account for storing files.")
 	}
@@ -142,6 +142,4 @@ var storHandler RequestHandler = func(conn *ftpConn, args ...interface{}) error 
 		count += n
 		f.Write(buffer[:n])
 	}
-
-	return nil
 }
