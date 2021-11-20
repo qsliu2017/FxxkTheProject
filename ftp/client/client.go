@@ -58,7 +58,15 @@ func (client *clientImpl) Login(username, password string) error {
 	return nil
 }
 
-func (*clientImpl) Logout() error {
+func (client *clientImpl) Logout() error {
+	if err := client.ctrlConn.Writer.PrintfLine("QUIT"); err != nil {
+		return err
+	}
+
+	if _, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.CTRL_CONN_CLOSE); err != nil {
+		return err
+	}
+
 	return nil
 }
 

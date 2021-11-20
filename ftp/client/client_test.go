@@ -127,3 +127,43 @@ func TestPasswordError(t *testing.T) {
 		t.Fatal("should not login")
 	}
 }
+
+func TestLogout(t *testing.T) {
+	if listener, err := net.Listen("tcp", ":8968"); err != nil {
+		t.Fatal(err)
+	} else {
+		go func() {
+			defer listener.Close()
+			if conn, err := listener.Accept(); err != nil {
+				return
+			} else {
+				server := textproto.NewConn(conn)
+				defer server.Close()
+				server.Writer.PrintfLine("220 Service ready for new user.")
+
+				if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
+					server.Writer.PrintfLine("331 User name okay, need password.")
+				}
+
+				if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
+					server.Writer.PrintfLine("230 User logged in, proceed.")
+				}
+
+				if line, _ := server.ReadLine(); strings.HasPrefix(line, "QUIT") {
+					server.Writer.PrintfLine("221 Service closing control connection.")
+				}
+			}
+		}()
+	}
+
+	client, err := NewFtpClient("localhost:8968")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Login("user", "pass"); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Logout(); err != nil {
+		t.Fatal(err)
+	}
+}
