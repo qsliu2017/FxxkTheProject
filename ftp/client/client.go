@@ -15,6 +15,8 @@ type FtpClient interface {
 }
 
 var (
+	ErrUsernameNotExist = errors.New("username does not exist")
+	ErrPasswordNotMatch = errors.New("password does not match")
 	ErrModeNotSupported = errors.New("Mode not support")
 )
 
