@@ -30,13 +30,17 @@ func NewFtpClient(addr string) (FtpClient, error) {
 		return nil, err
 	}
 
-	return &clientImpl{ctrlConn: conn}, nil
+	return &clientImpl{
+		ctrlConn: conn,
+		mode:     ModeStream,
+	}, nil
 }
 
 var _ FtpClient = (*clientImpl)(nil)
 
 type clientImpl struct {
 	ctrlConn *textproto.Conn
+	mode     byte
 }
 
 func (client *clientImpl) Login(username, password string) error {
@@ -98,6 +102,8 @@ func (client *clientImpl) Mode(mode byte) error {
 			return ErrModeNotSupported
 		}
 	}
+
+	client.mode = mode
 
 	return nil
 }

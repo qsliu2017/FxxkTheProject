@@ -197,13 +197,17 @@ func TestMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = client.Mode(ModeStream); err != nil {
+	if err = client.Mode(ModeStream); err != nil ||
+		client.(*clientImpl).mode != ModeStream {
 		t.Fatal(err)
 	}
-	if err = client.Mode(ModeBlock); err == nil || !errors.Is(err, ErrModeNotSupported) {
+	if err = client.Mode(ModeBlock); err == nil ||
+		!errors.Is(err, ErrModeNotSupported) ||
+		client.(*clientImpl).mode != ModeStream {
 		t.Fatal("should not change mode")
 	}
-	if err = client.Mode(ModeCompressed); err != nil {
+	if err = client.Mode(ModeCompressed); err != nil ||
+		client.(*clientImpl).mode != ModeCompressed {
 		t.Fatal(err)
 	}
 }
