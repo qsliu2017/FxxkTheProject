@@ -167,3 +167,43 @@ func TestLogout(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMode(t *testing.T) {
+	if listener, err := net.Listen("tcp", ":8969"); err != nil {
+		t.Fatal(err)
+	} else {
+		go func() {
+			defer listener.Close()
+			if conn, err := listener.Accept(); err != nil {
+				return
+			} else {
+				server := textproto.NewConn(conn)
+				defer server.Close()
+				server.Writer.PrintfLine("220 Service ready for new user.")
+
+				for {
+					if line, _ := server.ReadLine(); strings.HasPrefix(line, "MODE S") ||
+						strings.HasPrefix(line, "MODE C") {
+						server.Writer.PrintfLine("200 Command okay.")
+					} else if strings.HasPrefix(line, "MODE B") {
+						server.Writer.PrintfLine("504 Command not implemented for that parameter.")
+					}
+				}
+			}
+		}()
+	}
+
+	client, err := NewFtpClient("localhost:8969")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Mode(ModeStream); err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Mode(ModeBlock); err == nil || !errors.Is(err, ErrModeNotSupported) {
+		t.Fatal("should not change mode")
+	}
+	if err = client.Mode(ModeCompressed); err != nil {
+		t.Fatal(err)
+	}
+}

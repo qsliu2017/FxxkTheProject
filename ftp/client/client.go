@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"ftp/cmd"
 	"net/textproto"
 )
@@ -8,10 +9,14 @@ import (
 type FtpClient interface {
 	Login(username, password string) error
 	Logout() error
-	Mode(mode int) error
+	Mode(mode byte) error
 	Store(local, remote string) error
 	Retrieve(local, remote string) error
 }
+
+var (
+	ErrModeNotSupported = errors.New("Mode not support")
+)
 
 func NewFtpClient(addr string) (FtpClient, error) {
 	conn, err := textproto.Dial("tcp", addr)
@@ -71,11 +76,27 @@ func (client *clientImpl) Logout() error {
 }
 
 const (
-	ModeStream = iota
-	ModeCompressed
+	ModeStream     byte = 'S'
+	ModeBlock      byte = 'B'
+	ModeCompressed byte = 'C'
 )
 
-func (*clientImpl) Mode(mode int) error {
+func (client *clientImpl) Mode(mode byte) error {
+	if mode != ModeStream && mode != ModeBlock && mode != ModeCompressed {
+		return ErrModeNotSupported
+	}
+
+	if err := client.ctrlConn.Writer.PrintfLine("MODE %c", mode); err != nil {
+		return err
+	}
+
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
+		switch code {
+		case cmd.StatusParamNotImplemented:
+			return ErrModeNotSupported
+		}
+	}
+
 	return nil
 }
 
