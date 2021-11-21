@@ -1,9 +1,14 @@
 package client
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/textproto"
+	"os"
 	"strings"
 	"testing"
 )
@@ -210,4 +215,71 @@ func TestMode(t *testing.T) {
 		client.(*clientImpl).mode != ModeCompressed {
 		t.Fatal(err)
 	}
+}
+
+func TestRetrStreamMode(t *testing.T) {
+	if listener, err := net.Listen("tcp", ":8970"); err != nil {
+		t.Fatal(err)
+	} else {
+		go func() {
+			defer listener.Close()
+			if conn, err := listener.Accept(); err != nil {
+				return
+			} else {
+				server := textproto.NewConn(conn)
+				defer server.Close()
+
+				var dataConn net.Conn
+
+				server.Writer.PrintfLine("220 Service ready for new user.")
+				for {
+					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+						var h1, h2, h3, h4, p1, p2 byte
+						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+						server.Writer.PrintfLine("200 Command okay.")
+					} else if strings.HasPrefix(line, "RETR small.txt") {
+						if dataConn == nil {
+							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+							continue
+						}
+						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+						f, _ := os.Open("test_files/small.txt")
+						io.Copy(dataConn, f)
+						dataConn.Close()
+						f.Close()
+
+					} else if strings.HasPrefix(line, "RETR large.txt") {
+					} else if strings.HasPrefix(line, "RETR dir") {
+					} else if strings.HasPrefix(line, "RETR") {
+						// file not exist
+					}
+				}
+			}
+		}()
+	}
+
+	client, err := NewFtpClient("localhost:8970")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Retrieve("_test_/small.txt", "small.txt"); err != nil {
+		t.Fatal(err)
+	}
+
+	local, _ := os.Open("_test_/small.txt")
+	defer local.Close()
+	remote, _ := os.Open("test_files/small.txt")
+	defer remote.Close()
+	hasher := md5.New()
+	io.Copy(hasher, local)
+	localMd5 := hasher.Sum(nil)
+	hasher.Reset()
+	io.Copy(hasher, remote)
+	remoteMd5 := hasher.Sum(nil)
+	if !bytes.Equal(localMd5, remoteMd5) {
+		t.Fatal("file not equal")
+	}
+
+	os.Remove("_test_/small.txt")
 }

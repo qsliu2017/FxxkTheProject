@@ -3,7 +3,10 @@ package client
 import (
 	"errors"
 	"ftp/cmd"
+	"io"
+	"net"
 	"net/textproto"
+	"os"
 )
 
 type FtpClient interface {
@@ -112,6 +115,53 @@ func (*clientImpl) Store(local, remote string) error {
 	return nil
 }
 
-func (*clientImpl) Retrieve(local, remote string) error {
+func (client *clientImpl) Retrieve(local, remote string) error {
+	localFile, err := os.OpenFile(local, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer localFile.Close()
+
+	dataConnListener, err := net.ListenTCP("tcp4", nil)
+	if err != nil {
+		return err
+	}
+	defer dataConnListener.Close()
+
+	addr := dataConnListener.Addr().(*net.TCPAddr)
+	ip, port := []byte(addr.IP.To4()), addr.Port
+	if err := client.ctrlConn.Writer.PrintfLine(
+		cmd.PORT,
+		ip[0], ip[1], ip[2], ip[3],
+		(port / 256), (port % 256)); err != nil {
+		return err
+	}
+
+	dataConn, err := dataConnListener.Accept()
+	if err != nil {
+		return err
+	}
+	defer dataConn.Close()
+
+	if code, _, err := client.ctrlConn.ReadCodeLine(200); err != nil {
+		switch code {
+		}
+		return err
+	}
+
+	if err := client.ctrlConn.Writer.PrintfLine("RETR %s", remote); err != nil {
+		return err
+	}
+
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.ALREADY_OPEN); err != nil {
+		switch code {
+		}
+		return err
+	}
+
+	if _, err = io.Copy(localFile, dataConn); err != nil {
+		return err
+	}
+
 	return nil
 }
