@@ -18,9 +18,10 @@ type FtpClient interface {
 }
 
 var (
-	ErrUsernameNotExist = errors.New("username does not exist")
-	ErrPasswordNotMatch = errors.New("password does not match")
-	ErrModeNotSupported = errors.New("Mode not support")
+	ErrUsernameNotExist     = errors.New("username does not exist")
+	ErrPasswordNotMatch     = errors.New("password does not match")
+	ErrModeNotSupported     = errors.New("mode not support")
+	ErrFileModeNotSupported = errors.New("file mode not support")
 )
 
 func NewFtpClient(addr string) (FtpClient, error) {
@@ -112,6 +113,29 @@ func (client *clientImpl) Mode(mode byte) error {
 }
 
 func (client *clientImpl) Store(local, remote string) error {
+	fi, err := os.Stat(local)
+	if err != nil {
+		return err
+	}
+	mode := fi.Mode()
+	switch {
+	case mode.IsDir():
+		switch client.mode {
+		case ModeStream:
+			return client.storeMultiFilesStreamMode(local, remote)
+		case ModeCompressed:
+			return nil
+		default:
+			return ErrFileModeNotSupported
+		}
+	case mode.IsRegular():
+		return client.storeSingleFile(local, remote)
+	default:
+		return ErrFileModeNotSupported
+	}
+}
+
+func (client *clientImpl) storeSingleFile(local, remote string) error {
 	localFile, err := os.Open(local)
 	if err != nil {
 		return err
@@ -137,6 +161,23 @@ func (client *clientImpl) Store(local, remote string) error {
 		return err
 	}
 
+	return nil
+}
+
+func (client *clientImpl) storeMultiFilesStreamMode(local, remote string) error {
+	dir, err := os.ReadDir(local)
+	if err != nil {
+		return err
+	}
+	for _, file := range dir {
+		if file.IsDir() {
+			// should I do something?
+			continue
+		}
+		if err := client.storeSingleFile(local+"/"+file.Name(), remote+"/"+file.Name()); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

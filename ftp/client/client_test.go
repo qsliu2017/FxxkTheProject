@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/textproto"
 	"os"
@@ -351,5 +352,82 @@ func TestStorStreamMode(t *testing.T) {
 	remoteMd5 := hasher.Sum(nil)
 	if !bytes.Equal(localMd5, remoteMd5) {
 		t.Fatalf("file not equal \n%x\n%x", localMd5, remoteMd5)
+	}
+}
+
+func TestStoreMultiFilesStreamMode(t *testing.T) {
+	os.Mkdir("_test_", 0777)
+	defer os.RemoveAll("_test_")
+
+	filesave := make(chan bool, 10)
+	if listener, err := net.Listen("tcp", ":8972"); err != nil {
+		t.Fatal(err)
+	} else {
+		go func() {
+			defer listener.Close()
+			if conn, err := listener.Accept(); err != nil {
+				return
+			} else {
+				server := textproto.NewConn(conn)
+				defer server.Close()
+
+				var dataConn net.Conn
+
+				server.Writer.PrintfLine("220 Service ready for new user.")
+				for {
+					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+						var h1, h2, h3, h4, p1, p2 byte
+						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+						server.Writer.PrintfLine("200 Command okay.")
+					} else if strings.HasPrefix(line, "STOR") {
+						if dataConn == nil {
+							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+							continue
+						}
+						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+						f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
+						io.Copy(f, dataConn)
+						f.Close()
+						filesave <- true
+						dataConn.Close()
+					}
+				}
+			}
+		}()
+
+	}
+	client, err := NewFtpClient("localhost:8972")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = client.Store("test_files/", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	remoteFiles, _ := ioutil.ReadDir("_test_")
+	localFiles, _ := ioutil.ReadDir("test_files")
+	for i := 0; i < len(localFiles); i++ {
+		<-filesave
+	}
+	if len(remoteFiles) != len(localFiles) {
+		t.Fatalf("remote files not equal to local files")
+	}
+
+	for i := range remoteFiles {
+		local, _ := os.OpenFile("test_files/"+localFiles[i].Name(), os.O_RDONLY, 0666)
+		defer local.Close()
+		remote, _ := os.OpenFile("_test_/"+remoteFiles[i].Name(), os.O_RDONLY, 0666)
+		defer remote.Close()
+
+		hasher := md5.New()
+		io.Copy(hasher, local)
+		localMd5 := hasher.Sum(nil)
+		hasher.Reset()
+		io.Copy(hasher, remote)
+		remoteMd5 := hasher.Sum(nil)
+		if !bytes.Equal(localMd5, remoteMd5) {
+			t.Fatalf("file not equal \n%x\n%x", localMd5, remoteMd5)
+		}
 	}
 }
