@@ -1,7 +1,6 @@
 package client
 
 import (
-	"archive/tar"
 	"errors"
 	"ftp/cmd"
 	"io"
@@ -125,7 +124,7 @@ func (client *clientImpl) Store(local, remote string) error {
 		case ModeStream:
 			return client.storeMultiFilesStreamMode(local, remote)
 		case ModeCompressed:
-			return client.storeMultiFilesCompressedMode(local, remote)
+			return nil
 		default:
 			return ErrFileModeNotSupported
 		}
@@ -180,38 +179,6 @@ func (client *clientImpl) storeMultiFilesStreamMode(local, remote string) error 
 		}
 	}
 	return nil
-}
-
-func (client *clientImpl) storeMultiFilesCompressedMode(local, remote string) error {
-	dir, err := os.ReadDir(local)
-	if err != nil {
-		return err
-	}
-	tarFile, err := os.CreateTemp("", local+"-*.tar")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tarFile.Name())
-	defer tarFile.Close()
-
-	tarW := tar.NewWriter(tarFile)
-
-	for _, file := range dir {
-		if file.IsDir() {
-			// should I do something?
-			continue
-		}
-		fi, _ := file.Info()
-		hdr, _ := tar.FileInfoHeader(fi, file.Name())
-		tarW.WriteHeader(hdr)
-		f, _ := os.Open(local + "/" + file.Name())
-		io.Copy(tarW, f)
-		f.Close()
-	}
-	tarW.Flush()
-	tarW.Close()
-
-	return client.storeSingleFile(tarFile.Name(), remote)
 }
 
 func (client *clientImpl) Retrieve(local, remote string) error {

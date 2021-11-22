@@ -23,12 +23,12 @@ var (
 func init() {
 	_log, err := ioutil.TempFile("", "ftp-server-log-*")
 	if err != nil {
-		panic(err)
+		return
 	}
 	logger = log.New(_log, "ftp-server", log.LstdFlags)
 	_reader, err := os.Open(_log.Name())
 	if err != nil {
-		panic(err)
+		return
 	}
 	_logReader = &logReader{
 		reader: *bufio.NewReader(_reader),
