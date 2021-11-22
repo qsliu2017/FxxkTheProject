@@ -182,7 +182,7 @@ func (client *clientImpl) storeMultiFilesStreamMode(local, remote string) error 
 }
 
 func (client *clientImpl) Retrieve(local, remote string) error {
-	localFile, err := os.OpenFile(local, os.O_CREATE|os.O_WRONLY, 0644)
+	localFile, err := os.Create(local)
 	if err != nil {
 		return err
 	}
