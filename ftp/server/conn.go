@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"ftp/cmd"
 	"io"
-	"log"
 	"net"
 	"strings"
 )
@@ -26,7 +25,7 @@ const (
 func handleConn(conn net.Conn) {
 	defer func() {
 		conn.Close()
-		log.Println("Close connect", conn.RemoteAddr().String())
+		logger.Printf("%s:%s\n", conn.RemoteAddr(), conn.LocalAddr())
 	}()
 	ftpConn := _FtpConn{
 		ctrl: conn,
@@ -41,13 +40,14 @@ func handleConn(conn net.Conn) {
 			if err == io.EOF {
 				return
 			} else {
-				log.Println(err)
+				logger.Println(err)
 			}
 		}
 		commandline := string(buf[:n])
 		command := commandline[:4]
 		if handler, has := commandHandlers[command]; has {
 			if ftpConn._TestSyntax(commandline, handler.ArgsPattern, handler.Args...) {
+				logger.Printf("Accept command %s from %s", handler.Args[0], conn.RemoteAddr())
 				handler.Handler(&ftpConn, handler.Args...)
 			}
 		} else {
