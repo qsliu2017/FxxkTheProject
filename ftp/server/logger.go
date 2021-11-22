@@ -1,50 +1,23 @@
 package server
 
 import (
-	"bufio"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 )
 
-type LogReader interface {
-	Read() string
-}
+type OutputStream io.Writer
 
-func GetLogReader() LogReader {
-	return _logReader
-}
-
-var (
-	logger     *log.Logger
-	_logReader LogReader
-)
+var logger *log.Logger
 
 func init() {
-	_log, err := ioutil.TempFile("", "ftp-server-log-*")
+	null, err := os.Open(os.DevNull)
 	if err != nil {
-		return
+		panic(err)
 	}
-	logger = log.New(_log, "ftp-server", log.LstdFlags)
-	_reader, err := os.Open(_log.Name())
-	if err != nil {
-		return
-	}
-	_logReader = &logReader{
-		reader: *bufio.NewReader(_reader),
-	}
+	SetLogger(null)
 }
 
-var _ LogReader = (*logReader)(nil)
-
-type logReader struct {
-	reader bufio.Reader
-}
-
-func (l *logReader) Read() string {
-	line, _, err := l.reader.ReadLine()
-	if err != nil {
-		return ""
-	}
-	return string(line)
+func SetLogger(w OutputStream) {
+	logger = log.New(w, "ftp-server", log.LstdFlags)
 }
