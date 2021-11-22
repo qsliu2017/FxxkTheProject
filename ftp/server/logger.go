@@ -8,7 +8,7 @@ import (
 )
 
 type LogReader interface {
-	read() string
+	Read() string
 }
 
 func GetLogReader() LogReader {
