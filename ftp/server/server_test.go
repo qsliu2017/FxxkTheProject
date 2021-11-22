@@ -19,7 +19,7 @@ func Test_Listen(t *testing.T) {
 	t.Run("valid port", func(t *testing.T) {
 		s := NewFtpServer()
 		port := 8964
-		if _, err := s.Listen(port); err != nil {
+		if err := s.Listen(port); err != nil {
 			t.Error("Listen error", err)
 		}
 		defer s.Close()
