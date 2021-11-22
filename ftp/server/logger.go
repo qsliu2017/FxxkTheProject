@@ -41,7 +41,7 @@ type logReader struct {
 	reader bufio.Reader
 }
 
-func (l *logReader) read() string {
+func (l *logReader) Read() string {
 	line, _, err := l.reader.ReadLine()
 	if err != nil {
 		return ""
