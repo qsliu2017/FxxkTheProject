@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
 	"ftp/cmd"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -257,6 +260,54 @@ func Test_Stor(t *testing.T) {
 		buffer := make([]byte, 32)
 		n, _ := f.Read(buffer)
 		if strings.Compare(string(buffer[:n]), "test data\r\n") != 0 {
+			t.Error("data not match")
+		}
+	})
+}
+
+func Test_Retr(t *testing.T) {
+	t.Run("data connect", func(t *testing.T) {
+		c := setupConn(t)
+		defer teardownConn(t, c)
+
+		c.Write([]byte(fmt.Sprintf(cmd.RETR, "small.txt")))
+		assertReply(t, c, "150 File status okay; about to open data connection.\r\n", "")
+
+		dataConn, err := net.Listen("tcp", ":5456")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer dataConn.Close()
+
+		accept := make(chan net.Conn)
+		go func() {
+			conn, err := dataConn.Accept()
+			if err != nil {
+				t.Log(err)
+			}
+			accept <- conn
+		}()
+
+		// Client sends the port to server
+		c.Write([]byte(fmt.Sprintf(cmd.PORT, 127, 0, 0, 1, 21, 80)))
+		assertReply(t, c, "200 Command okay.\r\n", "test port error")
+		dataChan := <-accept
+
+		c.Write([]byte(fmt.Sprintf(cmd.RETR, "test_root/small.txt")))
+		assertReply(t, c, "125 Data connection already open; transfer starting.\r\n", "")
+
+		hasher := md5.New()
+		io.Copy(hasher, dataChan)
+		assertReply(t, c, "250 Requested file action okay, completed.\r\n", "")
+		remoteMd5 := hasher.Sum(nil)
+		hasher.Reset()
+
+		f, _ := os.Open("test_root/small.txt")
+		defer f.Close()
+		io.Copy(hasher, f)
+		localMd5 := hasher.Sum(nil)
+
+		if !bytes.Equal(remoteMd5, localMd5) {
 			t.Error("data not match")
 		}
 	})

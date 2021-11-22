@@ -2,6 +2,7 @@ package server
 
 import (
 	"ftp/cmd"
+	"io"
 	"net"
 	"os"
 )
@@ -65,6 +66,13 @@ func init() {
 		ArgsPattern: cmd.STOR,
 		Args:        []interface{}{&stor_pathname},
 	}
+
+	var retr_pathname string
+	commandHandlers["RETR"] = _CommandHandler{
+		Handler:     retrHandler,
+		ArgsPattern: cmd.RETR,
+		Args:        []interface{}{&retr_pathname},
+	}
 }
 
 var quitHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
@@ -106,20 +114,20 @@ var passHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 }
 
 var portHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
-	if conn.login {
-		var err error
-		conn.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   net.IPv4(*args[0].(*byte), *args[1].(*byte), *args[2].(*byte), *args[3].(*byte)),
-			Port: int(*args[4].(*byte))*256 + int(*args[5].(*byte)),
-		})
-		if err != nil {
-			return err
-		} else {
-			return conn.reply(cmd.OK, "Command okay.")
-		}
+	// if conn.login {
+	var err error
+	conn.data, err = net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   net.IPv4(*args[0].(*byte), *args[1].(*byte), *args[2].(*byte), *args[3].(*byte)),
+		Port: int(*args[4].(*byte))*256 + int(*args[5].(*byte)),
+	})
+	if err != nil {
+		return err
 	} else {
-		return conn.reply(cmd.NOT_LOGIN, "Not logged in.")
+		return conn.reply(cmd.OK, "Command okay.")
 	}
+	// } else {
+	// 	return conn.reply(cmd.NOT_LOGIN, "Not logged in.")
+	// }
 }
 
 var modeHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
@@ -150,19 +158,36 @@ var storHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 	f, err := os.OpenFile(*args[0].(*string), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		//TODO: handle error
-		return nil
+		return err
 	}
 	defer f.Close()
 	conn.reply(cmd.ALREADY_OPEN, cmd.GetCodeMessage(cmd.ALREADY_OPEN))
 
-	buffer := make([]byte, 1024)
-	count := 0
-	for {
-		n, err := conn.data.Read(buffer)
-		if err != nil {
-			return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
-		}
-		count += n
-		f.Write(buffer[:n])
+	if _, err := io.Copy(f, conn.data); err != nil {
+		return err
 	}
+
+	return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
+}
+
+var retrHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) error {
+	if conn.data == nil {
+		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
+	}
+
+	f, err := os.Open(*args[0].(*string))
+	if err != nil {
+		//TODO
+		return err
+	}
+	defer f.Close()
+	conn.reply(cmd.ALREADY_OPEN, cmd.GetCodeMessage(cmd.ALREADY_OPEN))
+
+	if _, err := io.Copy(conn.data, f); err != nil {
+		return err
+	}
+
+	conn.data.Close()
+
+	return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
 }
