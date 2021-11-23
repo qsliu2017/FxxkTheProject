@@ -41,7 +41,7 @@ func handleConn(conn *net.Conn) {
 		}
 
 		if err != nil {
-			logger.Println(err)
+			// logger.Println(err)
 			continue
 		}
 

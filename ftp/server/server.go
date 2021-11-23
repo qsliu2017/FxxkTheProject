@@ -38,7 +38,7 @@ func (server *_ServerImpl) Listen(port int) error {
 					if err == net.ErrClosed {
 						return
 					}
-					logger.Println(err)
+					// logger.Println(err)
 				} else {
 					logger.Printf("accepted connection from %s", conn.RemoteAddr())
 					// channel := make(chan bool)
