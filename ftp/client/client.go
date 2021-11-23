@@ -86,6 +86,7 @@ func (client *clientImpl) Login(username, password string) error {
 		case cmd.NEED_ACCOUNT:
 			return ErrUsernameNotExist
 		}
+		return err
 	}
 
 	if err := client.ctrlConn.Writer.PrintfLine("PASS %s", password); err != nil {
@@ -97,6 +98,7 @@ func (client *clientImpl) Login(username, password string) error {
 		case cmd.NOT_LOGIN:
 			return ErrPasswordNotMatch
 		}
+		return err
 	}
 
 	client.username = username
