@@ -58,7 +58,10 @@ func handleConn(conn *net.Conn) {
 
 		if ftpConn._TestSyntax(commandline, handler.ArgsPattern, handler.Args...) {
 			logger.Printf("accept command %s from %s", command, (*conn).RemoteAddr())
-			handler.Handler(&ftpConn, handler.Args...)
+			err := handler.Handler(&ftpConn, handler.Args...)
+			if err != nil {
+				logger.Printf("error when handle '%s': %s", commandline, err)
+			}
 		}
 	}
 }
