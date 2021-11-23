@@ -316,6 +316,12 @@ func (client *clientImpl) Retrieve(local, remote string) error {
 		return err
 	}
 
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.StatusFileActionCompleted); err != nil {
+		switch code {
+		}
+		return err
+	}
+
 	return nil
 }
 

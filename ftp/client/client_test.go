@@ -254,6 +254,7 @@ func TestRetrStreamMode(t *testing.T) {
 				io.Copy(dataConn, f)
 				dataConn.Close()
 				f.Close()
+				server.Writer.PrintfLine("250 Requested file action okay, completed.")
 
 			} else if strings.HasPrefix(line, "RETR large.txt") {
 			} else if strings.HasPrefix(line, "RETR dir") {
