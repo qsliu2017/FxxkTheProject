@@ -37,6 +37,12 @@ func handleConn(conn *net.Conn) {
 		commandline, err := ftpConn.ctrl.ReadLine()
 
 		if err == io.EOF {
+			logger.Printf("encount a EOF")
+			return
+		}
+
+		if err == io.ErrClosedPipe {
+			logger.Printf("encount a ErrClosedPipe")
 			return
 		}
 
