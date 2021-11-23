@@ -16,20 +16,14 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8964"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
-			}
-		}()
-	}
+	go func() {
+		listener, _ := net.Listen("tcp", ":8964")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		server.Writer.PrintfLine("220 Service ready for new user.")
+		server.Close()
+	}()
 
 	client, _ := NewFtpClient("localhost:8964")
 	if client == nil {
@@ -38,190 +32,161 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8965"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
+	go func() {
+		listener, _ := net.Listen("tcp", ":8965")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
-					server.Writer.PrintfLine("331 User name okay, need password.")
-				}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
+			server.Writer.PrintfLine("331 User name okay, need password.")
+		}
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
-					server.Writer.PrintfLine("230 User logged in, proceed.")
-				}
-			}
-		}()
-	}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
+			server.Writer.PrintfLine("230 User logged in, proceed.")
+		}
+
+	}()
 
 	client, _ := NewFtpClient("localhost:8965")
-	if client == nil {
-		t.Fatal("client is nil")
-	}
 
 	if err := client.Login("user", "pass"); err != nil {
 		t.Fatal(err)
 	}
+	if client.GetUsername() != "user" {
+		t.Fatal("username is not user")
+	}
 }
 
 func TestUsernameNotExist(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8966"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
+	go func() {
+		listener, _ := net.Listen("tcp", ":8966")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
-					server.Writer.PrintfLine("332 Need account for login.")
-				}
-			}
-		}()
-	}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
+			server.Writer.PrintfLine("332 Need account for login.")
+		}
+	}()
 
 	client, _ := NewFtpClient("localhost:8966")
-	if client == nil {
-		t.Fatal("client is nil")
-	}
 
 	if err := client.Login("user", "pass"); err == nil || !errors.Is(err, ErrUsernameNotExist) {
 		t.Fatal("should not login")
 	}
+	if client.GetUsername() != "" {
+		t.Fatal("username should be empty")
+	}
 }
 
 func TestPasswordError(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8967"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
+	go func() {
+		listener, _ := net.Listen("tcp", ":8967")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
-					server.Writer.PrintfLine("331 User name okay, need password.")
-				}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
+			server.Writer.PrintfLine("331 User name okay, need password.")
+		}
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
-					server.Writer.PrintfLine("530 Not logged in.")
-				}
-			}
-		}()
-	}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
+			server.Writer.PrintfLine("530 Not logged in.")
+		}
+	}()
 
 	client, _ := NewFtpClient("localhost:8967")
-	if client == nil {
-		t.Fatal("client is nil")
-	}
 
 	if err := client.Login("user", "pass"); err == nil || !errors.Is(err, ErrPasswordNotMatch) {
 		t.Fatal("should not login")
 	}
+	if client.GetUsername() != "" {
+		t.Fatal("username should be empty")
+	}
 }
 
 func TestLogout(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8968"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
+	go func() {
+		listener, _ := net.Listen("tcp", ":8968")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
-					server.Writer.PrintfLine("331 User name okay, need password.")
-				}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "USER") {
+			server.Writer.PrintfLine("331 User name okay, need password.")
+		}
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
-					server.Writer.PrintfLine("230 User logged in, proceed.")
-				}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "PASS") {
+			server.Writer.PrintfLine("230 User logged in, proceed.")
+		}
 
-				if line, _ := server.ReadLine(); strings.HasPrefix(line, "QUIT") {
-					server.Writer.PrintfLine("221 Service closing control connection.")
-				}
-			}
-		}()
-	}
+		if line, _ := server.ReadLine(); strings.HasPrefix(line, "QUIT") {
+			server.Writer.PrintfLine("221 Service closing control connection.")
+		}
+	}()
 
-	client, err := NewFtpClient("localhost:8968")
-	if err != nil {
+	client, _ := NewFtpClient("localhost:8968")
+	if err := client.Login("user", "pass"); err != nil {
 		t.Fatal(err)
 	}
-	if err = client.Login("user", "pass"); err != nil {
-		t.Fatal(err)
+	if client.GetUsername() != "user" {
+		t.Fatal("username is not user")
 	}
 	if err := client.Logout(); err != nil {
 		t.Fatal(err)
 	}
+	if client.GetUsername() != "" {
+		t.Fatal("username should be empty")
+	}
 }
 
 func TestMode(t *testing.T) {
-	if listener, err := net.Listen("tcp", ":8969"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
-				server.Writer.PrintfLine("220 Service ready for new user.")
+	go func() {
+		listener, _ := net.Listen("tcp", ":8969")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
 
-				for {
-					if line, _ := server.ReadLine(); strings.HasPrefix(line, "MODE S") ||
-						strings.HasPrefix(line, "MODE C") {
-						server.Writer.PrintfLine("200 Command okay.")
-					} else if strings.HasPrefix(line, "MODE B") {
-						server.Writer.PrintfLine("504 Command not implemented for that parameter.")
-					}
-				}
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "MODE S") ||
+				strings.HasPrefix(line, "MODE C") {
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "MODE B") {
+				server.Writer.PrintfLine("504 Command not implemented for that parameter.")
 			}
-		}()
-	}
+		}
+	}()
 
-	client, err := NewFtpClient("localhost:8969")
-	if err != nil {
+	client, _ := NewFtpClient("localhost:8969")
+	if err := client.Mode(ModeStream); err != nil ||
+		client.GetMode() != ModeStream {
 		t.Fatal(err)
 	}
-	if err = client.Mode(ModeStream); err != nil ||
-		client.(*clientImpl).mode != ModeStream {
-		t.Fatal(err)
-	}
-	if err = client.Mode(ModeBlock); err == nil ||
+	if err := client.Mode(ModeBlock); err == nil ||
 		!errors.Is(err, ErrModeNotSupported) ||
-		client.(*clientImpl).mode != ModeStream {
+		client.GetMode() != ModeStream {
 		t.Fatal("should not change mode")
 	}
-	if err = client.Mode(ModeCompressed); err != nil ||
-		client.(*clientImpl).mode != ModeCompressed {
+	if err := client.Mode(ModeCompressed); err != nil ||
+		client.GetMode() != ModeCompressed {
 		t.Fatal(err)
 	}
 }
 
 func TestType(t *testing.T) {
-	listener, _ := net.Listen("tcp", ":8970")
 	go func() {
+		listener, _ := net.Listen("tcp", ":8970")
 		conn, _ := listener.Accept()
 		listener.Close()
 
@@ -242,18 +207,18 @@ func TestType(t *testing.T) {
 	client, _ := NewFtpClient("localhost:8970")
 
 	if err := client.Type(TypeAscii); err != nil ||
-		client.(*clientImpl).type_ != TypeAscii {
+		client.GetType() != TypeAscii {
 		t.Fatal(err)
 	}
 
 	if err := client.Type('L'); err == nil ||
 		!errors.Is(err, ErrTypeNotSupported) ||
-		client.(*clientImpl).type_ != TypeAscii {
+		client.GetType() != TypeAscii {
 		t.Fatal("should not change type")
 	}
 
 	if err := client.Type(TypeBinary); err != nil ||
-		client.(*clientImpl).type_ != TypeBinary {
+		client.GetType() != TypeBinary {
 		t.Fatal(err)
 	}
 
@@ -263,52 +228,43 @@ func TestRetrStreamMode(t *testing.T) {
 	os.Mkdir("_test_", 0777)
 	defer os.RemoveAll("_test_")
 
-	if listener, err := net.Listen("tcp", ":8970"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
+	go func() {
+		listener, _ := net.Listen("tcp", ":8970")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
 
-				var dataConn net.Conn
+		var dataConn net.Conn
 
-				server.Writer.PrintfLine("220 Service ready for new user.")
-				for {
-					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
-						var h1, h2, h3, h4, p1, p2 byte
-						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
-						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
-						server.Writer.PrintfLine("200 Command okay.")
-					} else if strings.HasPrefix(line, "RETR small.txt") {
-						if dataConn == nil {
-							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
-							continue
-						}
-						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
-						f, _ := os.Open("test_files/small.txt")
-						io.Copy(dataConn, f)
-						dataConn.Close()
-						f.Close()
-
-					} else if strings.HasPrefix(line, "RETR large.txt") {
-					} else if strings.HasPrefix(line, "RETR dir") {
-					} else if strings.HasPrefix(line, "RETR") {
-						// file not exist
-					}
+		server.Writer.PrintfLine("220 Service ready for new user.")
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+				var h1, h2, h3, h4, p1, p2 byte
+				fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+				dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "RETR small.txt") {
+				if dataConn == nil {
+					server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+					continue
 				}
-			}
-		}()
-	}
+				server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+				f, _ := os.Open("test_files/small.txt")
+				io.Copy(dataConn, f)
+				dataConn.Close()
+				f.Close()
 
-	client, err := NewFtpClient("localhost:8970")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = client.Retrieve("_test_/small.txt", "small.txt"); err != nil {
+			} else if strings.HasPrefix(line, "RETR large.txt") {
+			} else if strings.HasPrefix(line, "RETR dir") {
+			} else if strings.HasPrefix(line, "RETR") {
+				// file not exist
+			}
+		}
+	}()
+
+	client, _ := NewFtpClient("localhost:8970")
+	if err := client.Retrieve("_test_/small.txt", "small.txt"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -332,48 +288,39 @@ func TestStorStreamMode(t *testing.T) {
 	defer os.RemoveAll("_test_")
 
 	filesave := make(chan bool)
-	if listener, err := net.Listen("tcp", ":8971"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
+	go func() {
+		listener, _ := net.Listen("tcp", ":8971")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
 
-				var dataConn net.Conn
+		var dataConn net.Conn
 
-				server.Writer.PrintfLine("220 Service ready for new user.")
-				for {
-					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
-						var h1, h2, h3, h4, p1, p2 byte
-						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
-						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
-						server.Writer.PrintfLine("200 Command okay.")
-					} else if strings.HasPrefix(line, "STOR small.txt") {
-						if dataConn == nil {
-							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
-							continue
-						}
-						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
-						f, _ := os.Create("_test_/small.txt")
-						io.Copy(f, dataConn)
-						f.Close()
-						filesave <- true
-						dataConn.Close()
-					}
+		server.Writer.PrintfLine("220 Service ready for new user.")
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+				var h1, h2, h3, h4, p1, p2 byte
+				fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+				dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "STOR small.txt") {
+				if dataConn == nil {
+					server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+					continue
 				}
+				server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+				f, _ := os.Create("_test_/small.txt")
+				io.Copy(f, dataConn)
+				f.Close()
+				filesave <- true
+				dataConn.Close()
 			}
-		}()
-	}
+		}
+	}()
 
-	client, err := NewFtpClient("localhost:8971")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = client.Store("test_files/small.txt", "small.txt"); err != nil {
+	client, _ := NewFtpClient("localhost:8971")
+	if err := client.Store("test_files/small.txt", "small.txt"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -401,48 +348,38 @@ func TestStoreMultiFilesStreamMode(t *testing.T) {
 	defer os.RemoveAll("_test_")
 
 	filesave := make(chan bool, 10)
-	if listener, err := net.Listen("tcp", ":8972"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
+	go func() {
+		listener, _ := net.Listen("tcp", ":8972")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
 
-				var dataConn net.Conn
+		var dataConn net.Conn
 
-				server.Writer.PrintfLine("220 Service ready for new user.")
-				for {
-					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
-						var h1, h2, h3, h4, p1, p2 byte
-						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
-						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
-						server.Writer.PrintfLine("200 Command okay.")
-					} else if strings.HasPrefix(line, "STOR") {
-						if dataConn == nil {
-							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
-							continue
-						}
-						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
-						f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
-						io.Copy(f, dataConn)
-						f.Close()
-						filesave <- true
-						dataConn.Close()
-					}
+		server.Writer.PrintfLine("220 Service ready for new user.")
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+				var h1, h2, h3, h4, p1, p2 byte
+				fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+				dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "STOR") {
+				if dataConn == nil {
+					server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+					continue
 				}
+				server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+				f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
+				io.Copy(f, dataConn)
+				f.Close()
+				filesave <- true
+				dataConn.Close()
 			}
-		}()
-
-	}
-	client, err := NewFtpClient("localhost:8972")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = client.Store("test_files/", ""); err != nil {
+		}
+	}()
+	client, _ := NewFtpClient("localhost:8972")
+	if err := client.Store("test_files/", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -478,52 +415,43 @@ func TestStoreMultiFilesCompressedMode(t *testing.T) {
 	defer os.RemoveAll("_test_")
 
 	filesave := make(chan bool)
-	if listener, err := net.Listen("tcp", ":8973"); err != nil {
-		t.Fatal(err)
-	} else {
-		go func() {
-			defer listener.Close()
-			if conn, err := listener.Accept(); err != nil {
-				return
-			} else {
-				server := textproto.NewConn(conn)
-				defer server.Close()
+	go func() {
+		listener, _ := net.Listen("tcp", ":8973")
+		conn, _ := listener.Accept()
+		listener.Close()
+		server := textproto.NewConn(conn)
+		defer server.Close()
 
-				var dataConn net.Conn
+		var dataConn net.Conn
 
-				server.Writer.PrintfLine("220 Service ready for new user.")
-				for {
-					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
-						var h1, h2, h3, h4, p1, p2 byte
-						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
-						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
-						server.Writer.PrintfLine("200 Command okay.")
-					} else if strings.HasPrefix(line, "STOR") {
-						if dataConn == nil {
-							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
-							continue
-						}
-						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
-						f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
-						io.Copy(f, dataConn)
-						f.Close()
-						filesave <- true
-						dataConn.Close()
-					} else if strings.HasPrefix(line, "MODE") {
-						server.Writer.PrintfLine("200 Command okay.")
-					}
+		server.Writer.PrintfLine("220 Service ready for new user.")
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+				var h1, h2, h3, h4, p1, p2 byte
+				fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+				dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "STOR") {
+				if dataConn == nil {
+					server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+					continue
 				}
+				server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+				f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
+				io.Copy(f, dataConn)
+				f.Close()
+				filesave <- true
+				dataConn.Close()
+			} else if strings.HasPrefix(line, "MODE") {
+				server.Writer.PrintfLine("200 Command okay.")
 			}
-		}()
-	}
+		}
+	}()
 
-	client, err := NewFtpClient("localhost:8973")
-	if err != nil {
-		t.Fatal(err)
-	}
+	client, _ := NewFtpClient("localhost:8973")
 
 	client.Mode(ModeCompressed)
-	if err = client.Store("test_files", "test_files.tar"); err != nil {
+	if err := client.Store("test_files", "test_files.tar"); err != nil {
 		t.Fatal(err)
 	}
 
