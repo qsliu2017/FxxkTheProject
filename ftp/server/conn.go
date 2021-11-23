@@ -38,7 +38,7 @@ func handleConn(conn *net.Conn) {
 
 		if err == io.EOF {
 			logger.Printf("encount a EOF")
-			return
+			continue
 		}
 
 		if err == io.ErrClosedPipe {
