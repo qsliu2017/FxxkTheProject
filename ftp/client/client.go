@@ -1,12 +1,14 @@
 package client
 
 import (
+	"archive/tar"
 	"errors"
 	"ftp/cmd"
 	"io"
 	"net"
 	"net/textproto"
 	"os"
+	"path"
 )
 
 type FtpClient interface {
@@ -124,7 +126,7 @@ func (client *clientImpl) Store(local, remote string) error {
 		case ModeStream:
 			return client.storeMultiFilesStreamMode(local, remote)
 		case ModeCompressed:
-			return nil
+			return client.storeMultiFilesCompressedMode(local, remote)
 		default:
 			return ErrFileModeNotSupported
 		}
@@ -179,6 +181,50 @@ func (client *clientImpl) storeMultiFilesStreamMode(local, remote string) error 
 		}
 	}
 	return nil
+}
+
+func (client *clientImpl) storeMultiFilesCompressedMode(local, remote string) error {
+	dir, err := os.ReadDir(local)
+	if err != nil {
+		return err
+	}
+
+	dataConn, err := client.createDataConn()
+	if err != nil {
+		return err
+	}
+	defer dataConn.Close()
+
+	if err := client.ctrlConn.Writer.PrintfLine("STOR %s", remote); err != nil {
+		return err
+	}
+
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.ALREADY_OPEN); err != nil {
+		switch code {
+		}
+		return err
+	}
+
+	tarW := tar.NewWriter(dataConn)
+
+	for _, file := range dir {
+		if file.IsDir() {
+			// should I do something?
+			continue
+		}
+		fi, _ := file.Info()
+		hdr, _ := tar.FileInfoHeader(fi, file.Name())
+		tarW.WriteHeader(hdr)
+		f, _ := os.Open(path.Join(local, file.Name()))
+		io.Copy(tarW, f)
+		f.Close()
+	}
+
+	if err := tarW.Flush(); err != nil {
+		return err
+	}
+
+	return tarW.Close()
 }
 
 func (client *clientImpl) Retrieve(local, remote string) error {

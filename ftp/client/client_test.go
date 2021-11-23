@@ -1,6 +1,7 @@
 package client
 
 import (
+	"archive/tar"
 	"bytes"
 	"crypto/md5"
 	"errors"
@@ -430,4 +431,86 @@ func TestStoreMultiFilesStreamMode(t *testing.T) {
 			t.Fatalf("file not equal \n%x\n%x", localMd5, remoteMd5)
 		}
 	}
+}
+
+func TestStoreMultiFilesCompressedMode(t *testing.T) {
+	os.Mkdir("_test_", 0777)
+	defer os.RemoveAll("_test_")
+
+	filesave := make(chan bool)
+	if listener, err := net.Listen("tcp", ":8973"); err != nil {
+		t.Fatal(err)
+	} else {
+		go func() {
+			defer listener.Close()
+			if conn, err := listener.Accept(); err != nil {
+				return
+			} else {
+				server := textproto.NewConn(conn)
+				defer server.Close()
+
+				var dataConn net.Conn
+
+				server.Writer.PrintfLine("220 Service ready for new user.")
+				for {
+					if line, _ := server.ReadLine(); strings.HasPrefix(line, "PORT") {
+						var h1, h2, h3, h4, p1, p2 byte
+						fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
+						dataConn, _ = net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, int(p1)*256+int(p2)))
+						server.Writer.PrintfLine("200 Command okay.")
+					} else if strings.HasPrefix(line, "STOR") {
+						if dataConn == nil {
+							server.Writer.PrintfLine("150 File status okay; about to open data connection.")
+							continue
+						}
+						server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
+						f, _ := os.Create("_test_/" + strings.TrimPrefix(line, "STOR "))
+						io.Copy(f, dataConn)
+						f.Close()
+						filesave <- true
+						dataConn.Close()
+					} else if strings.HasPrefix(line, "MODE") {
+						server.Writer.PrintfLine("200 Command okay.")
+					}
+				}
+			}
+		}()
+	}
+
+	client, err := NewFtpClient("localhost:8973")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client.Mode(ModeCompressed)
+	if err = client.Store("test_files", "test_files.tar"); err != nil {
+		t.Fatal(err)
+	}
+
+	<-filesave
+
+	tarF, _ := os.Open("_test_/test_files.tar")
+	defer tarF.Close()
+	hasher := md5.New()
+	io.Copy(hasher, tarF)
+	remoteMd5 := hasher.Sum(nil)
+	hasher.Reset()
+
+	localFs, _ := ioutil.ReadDir("test_files")
+	tarW := tar.NewWriter(hasher)
+	for _, localF := range localFs {
+		local, _ := os.OpenFile("test_files/"+localF.Name(), os.O_RDONLY, 0666)
+		hdr, _ := tar.FileInfoHeader(localF, localF.Name())
+		tarW.WriteHeader(hdr)
+		io.Copy(tarW, local)
+		local.Close()
+	}
+	tarW.Flush()
+	tarW.Close()
+	localMd5 := hasher.Sum(nil)
+
+	if !bytes.Equal(localMd5, remoteMd5) {
+		t.Fatalf("file not equal \n%x\n%x", localMd5, remoteMd5)
+	}
+
 }
