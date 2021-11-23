@@ -167,6 +167,9 @@ var storHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		return err
 	}
 
+	conn.data.Close()
+	conn.data = nil
+
 	return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
 }
 
@@ -188,6 +191,7 @@ var retrHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 	}
 
 	conn.data.Close()
+	conn.data = nil
 
 	return conn.reply(cmd.StatusFileActionCompleted, cmd.GetCodeMessage(cmd.StatusFileActionCompleted))
 }
