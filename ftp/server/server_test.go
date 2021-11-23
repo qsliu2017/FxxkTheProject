@@ -53,7 +53,7 @@ func assertReply(t *testing.T, c net.Conn, expect, msg string) {
 func setupConn(t *testing.T) net.Conn {
 	t.Helper()
 	c, s := net.Pipe()
-	go handleConn(s)
+	go handleConn(&s)
 
 	// After connection establishment, expects 220
 	assertReply(t, c, "220 Service ready for new user.\r\n", "Service not ready")
