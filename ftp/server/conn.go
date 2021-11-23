@@ -51,6 +51,10 @@ func handleConn(conn *net.Conn) {
 			continue
 		}
 
+		if len(commandline) < 4 {
+			ftpConn.reply(cmd.SYNTAX_ERROR, "Syntax error, command unrecognized.")
+			continue
+		}
 		command := commandline[:4]
 		handler, has := commandHandlers[command]
 		if !has {
