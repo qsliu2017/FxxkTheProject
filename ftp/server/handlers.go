@@ -3,8 +3,8 @@ package server
 import (
 	"ftp/cmd"
 	"io"
+	"io/fs"
 	"net"
-	"os"
 )
 
 type _RequestHandler func(conn *_FtpConn, args ...interface{}) error
@@ -155,10 +155,11 @@ var storHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
 	}
 
-	f, err := os.OpenFile(*args[0].(*string), os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
+	f := fileManager.GetFile(*args[0].(*string))
+	if f == nil {
 		//TODO: handle error
-		return err
+		logger.Printf("cannot open file %s", *args[0].(*string))
+		return fs.ErrNotExist
 	}
 	defer f.Close()
 	conn.reply(cmd.ALREADY_OPEN, cmd.GetCodeMessage(cmd.ALREADY_OPEN))
@@ -178,10 +179,10 @@ var retrHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
 	}
 
-	f, err := os.Open(*args[0].(*string))
-	if err != nil {
-		//TODO
-		return err
+	f := fileManager.GetFile(*args[0].(*string))
+	if f == nil {
+		logger.Printf("cannot open file %s", *args[0].(*string))
+		return fs.ErrNotExist
 	}
 	defer f.Close()
 	conn.reply(cmd.ALREADY_OPEN, cmd.GetCodeMessage(cmd.ALREADY_OPEN))
