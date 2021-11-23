@@ -14,15 +14,31 @@ import (
 type FtpClient interface {
 	Login(username, password string) error
 	Logout() error
+	GetUsername() string
+
 	Mode(mode byte) error
+	GetMode() byte
+
+	Type(type_ byte) error
+	GetType() byte
+
 	Store(local, remote string) error
 	Retrieve(local, remote string) error
 }
+
+const (
+	ModeStream     byte = 'S'
+	ModeBlock      byte = 'B'
+	ModeCompressed byte = 'C'
+	TypeAscii      byte = 'A'
+	TypeBinary     byte = 'I'
+)
 
 var (
 	ErrUsernameNotExist     = errors.New("username does not exist")
 	ErrPasswordNotMatch     = errors.New("password does not match")
 	ErrModeNotSupported     = errors.New("mode not support")
+	ErrTypeNotSupported     = errors.New("type not support")
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
 
@@ -36,17 +52,28 @@ func NewFtpClient(addr string) (FtpClient, error) {
 		return nil, err
 	}
 
+	client := defaultFtpClient()
+	client.ctrlConn = conn
+
+	return client, nil
+}
+
+func defaultFtpClient() *clientImpl {
 	return &clientImpl{
-		ctrlConn: conn,
+		ctrlConn: nil,
+		username: "",
 		mode:     ModeStream,
-	}, nil
+		type_:    TypeAscii,
+	}
 }
 
 var _ FtpClient = (*clientImpl)(nil)
 
 type clientImpl struct {
 	ctrlConn *textproto.Conn
+	username string
 	mode     byte
+	type_    byte
 }
 
 func (client *clientImpl) Login(username, password string) error {
@@ -72,6 +99,8 @@ func (client *clientImpl) Login(username, password string) error {
 		}
 	}
 
+	client.username = username
+
 	return nil
 }
 
@@ -84,14 +113,14 @@ func (client *clientImpl) Logout() error {
 		return err
 	}
 
+	client.username = ""
+
 	return nil
 }
 
-const (
-	ModeStream     byte = 'S'
-	ModeBlock      byte = 'B'
-	ModeCompressed byte = 'C'
-)
+func (client clientImpl) GetUsername() string {
+	return client.username
+}
 
 func (client *clientImpl) Mode(mode byte) error {
 	if mode != ModeStream && mode != ModeBlock && mode != ModeCompressed {
@@ -107,11 +136,42 @@ func (client *clientImpl) Mode(mode byte) error {
 		case cmd.StatusParamNotImplemented:
 			return ErrModeNotSupported
 		}
+		return err
 	}
 
 	client.mode = mode
 
 	return nil
+}
+
+func (client clientImpl) GetMode() byte {
+	return client.mode
+}
+
+func (client *clientImpl) Type(type_ byte) error {
+	if type_ != TypeAscii && type_ != TypeBinary {
+		return ErrTypeNotSupported
+	}
+
+	if err := client.ctrlConn.Writer.PrintfLine("TYPE %c", type_); err != nil {
+		return err
+	}
+
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
+		switch code {
+		case cmd.StatusParamNotImplemented:
+			return ErrTypeNotSupported
+		}
+		return err
+	}
+
+	client.type_ = type_
+
+	return nil
+}
+
+func (cleint clientImpl) GetType() byte {
+	return cleint.type_
 }
 
 func (client *clientImpl) Store(local, remote string) error {

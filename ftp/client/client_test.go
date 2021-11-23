@@ -219,6 +219,46 @@ func TestMode(t *testing.T) {
 	}
 }
 
+func TestType(t *testing.T) {
+	listener, _ := net.Listen("tcp", ":8970")
+	go func() {
+		conn, _ := listener.Accept()
+		listener.Close()
+
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
+
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "TYPE A") ||
+				strings.HasPrefix(line, "TYPE I") {
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "TYPE L") {
+				server.Writer.PrintfLine("504 Command not implemented for that parameter.")
+			}
+		}
+	}()
+
+	client, _ := NewFtpClient("localhost:8970")
+
+	if err := client.Type(TypeAscii); err != nil ||
+		client.(*clientImpl).type_ != TypeAscii {
+		t.Fatal(err)
+	}
+
+	if err := client.Type('L'); err == nil ||
+		!errors.Is(err, ErrTypeNotSupported) ||
+		client.(*clientImpl).type_ != TypeAscii {
+		t.Fatal("should not change type")
+	}
+
+	if err := client.Type(TypeBinary); err != nil ||
+		client.(*clientImpl).type_ != TypeBinary {
+		t.Fatal(err)
+	}
+
+}
+
 func TestRetrStreamMode(t *testing.T) {
 	os.Mkdir("_test_", 0777)
 	defer os.RemoveAll("_test_")
