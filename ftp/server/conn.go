@@ -5,11 +5,12 @@ import (
 	"ftp/cmd"
 	"io"
 	"net"
+	"net/textproto"
 	"strings"
 )
 
 type _FtpConn struct {
-	ctrl     net.Conn
+	ctrl     *textproto.Conn
 	data     net.Conn
 	username string
 	login    bool
@@ -23,35 +24,37 @@ const (
 )
 
 func handleConn(conn net.Conn) {
-	defer func() {
-		conn.Close()
-		logger.Printf("connect %s closed\n", conn.RemoteAddr())
-	}()
 	ftpConn := _FtpConn{
-		ctrl: conn,
+		ctrl: textproto.NewConn(conn),
 		data: nil,
 		mode: ModeStream,
 	}
+	defer ftpConn.ctrl.Close()
+	defer logger.Printf("connect %s closed\n", conn.RemoteAddr())
+
 	ftpConn.reply(cmd.SERVICE_READY, "Service ready for new user.")
-	buf := make([]byte, 128)
 	for {
-		n, err := conn.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				return
-			} else {
-				logger.Println(err)
-			}
+		commandline, err := ftpConn.ctrl.ReadLine()
+
+		if err == io.EOF {
+			return
 		}
-		commandline := string(buf[:n])
+
+		if err != nil {
+			logger.Println(err)
+			continue
+		}
+
 		command := commandline[:4]
-		if handler, has := commandHandlers[command]; has {
-			if ftpConn._TestSyntax(commandline, handler.ArgsPattern, handler.Args...) {
-				logger.Printf("accept command %s from %s", command, conn.RemoteAddr())
-				handler.Handler(&ftpConn, handler.Args...)
-			}
-		} else {
+		handler, has := commandHandlers[command]
+		if !has {
 			ftpConn.reply(cmd.SYNTAX_ERROR, "Syntax error, command unrecognized.")
+			continue
+		}
+
+		if ftpConn._TestSyntax(commandline, handler.ArgsPattern, handler.Args...) {
+			logger.Printf("accept command %s from %s", command, conn.RemoteAddr())
+			handler.Handler(&ftpConn, handler.Args...)
 		}
 	}
 }
@@ -60,8 +63,7 @@ func (conn _FtpConn) reply(code int, msg string) error {
 	if strings.Contains(msg, "\r\n") {
 		return fmt.Errorf("multiline msg not implement")
 	}
-	_, err := conn.ctrl.Write([]byte(fmt.Sprintf("%3d %s\r\n", code, msg)))
-	return err
+	return conn.ctrl.PrintfLine("%3d %s", code, msg)
 }
 
 func (conn _FtpConn) _SyntaxError() error {

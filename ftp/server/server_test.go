@@ -139,14 +139,6 @@ func Test_Pass(t *testing.T) {
 }
 
 func Test_Port(t *testing.T) {
-	t.Run("not login", func(t *testing.T) {
-		c := setupConn(t)
-		defer teardownConn(t, c)
-
-		c.Write([]byte(fmt.Sprintf(cmd.PORT, 0, 0, 0, 0, 0, 0)))
-		assertReply(t, c, "530 Not logged in.\r\n", "test port with login error")
-	})
-
 	t.Run("login", func(t *testing.T) {
 		c := setupConn(t)
 		defer teardownConn(t, c)
