@@ -2,7 +2,6 @@ package server
 
 import (
 	"ftp/cmd"
-	"ftp/fm"
 	"io"
 	"io/fs"
 	"net"
@@ -156,7 +155,7 @@ var storHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
 	}
 
-	f := fm.GetFile(*args[0].(*string))
+	f := getFile(*args[0].(*string))
 	if f == nil {
 		//TODO: handle error
 		logger.Printf("cannot open file %s", *args[0].(*string))
@@ -180,7 +179,7 @@ var retrHandler _RequestHandler = func(conn *_FtpConn, args ...interface{}) erro
 		return conn.reply(cmd.ABOUT_TO_DATA_CONN, cmd.GetCodeMessage(cmd.ABOUT_TO_DATA_CONN))
 	}
 
-	f := fm.GetFile(*args[0].(*string))
+	f := getFile(*args[0].(*string))
 	if f == nil {
 		logger.Printf("cannot open file %s", *args[0].(*string))
 		return fs.ErrNotExist
