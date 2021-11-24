@@ -22,6 +22,9 @@ type FtpClient interface {
 	Type(type_ byte) error
 	GetType() byte
 
+	Structure(stru byte) error
+	GetStructure() byte
+
 	Store(local, remote string) error
 	Retrieve(local, remote string) error
 }
@@ -32,6 +35,7 @@ const (
 	ModeCompressed byte = 'C'
 	TypeAscii      byte = 'A'
 	TypeBinary     byte = 'I'
+	StruFile       byte = 'F'
 )
 
 var (
@@ -39,6 +43,7 @@ var (
 	ErrPasswordNotMatch     = errors.New("password does not match")
 	ErrModeNotSupported     = errors.New("mode not support")
 	ErrTypeNotSupported     = errors.New("type not support")
+	ErrStruNotSupported     = errors.New("stru not support")
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
 
@@ -64,6 +69,7 @@ func defaultFtpClient() *clientImpl {
 		username: "",
 		mode:     ModeStream,
 		type_:    TypeAscii,
+		stru:     StruFile,
 	}
 }
 
@@ -74,6 +80,7 @@ type clientImpl struct {
 	username string
 	mode     byte
 	type_    byte
+	stru     byte
 }
 
 func (client *clientImpl) Login(username, password string) error {
@@ -174,6 +181,31 @@ func (client *clientImpl) Type(type_ byte) error {
 
 func (cleint clientImpl) GetType() byte {
 	return cleint.type_
+}
+
+func (client *clientImpl) Structure(stru byte) error {
+	if stru != StruFile {
+		return ErrStruNotSupported
+	}
+
+	if err := client.ctrlConn.Writer.PrintfLine("STRU %c", stru); err != nil {
+		return err
+	}
+
+	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
+		switch code {
+		case cmd.StatusParamNotImplemented:
+			return ErrStruNotSupported
+		}
+		return err
+	}
+
+	client.stru = stru
+	return nil
+}
+
+func (client clientImpl) GetStructure() byte {
+	return client.stru
 }
 
 func (client *clientImpl) Store(local, remote string) error {

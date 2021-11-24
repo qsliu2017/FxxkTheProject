@@ -224,6 +224,36 @@ func TestType(t *testing.T) {
 
 }
 
+func TestStru(t *testing.T) {
+	go func() {
+		listener, _ := net.Listen("tcp", ":8971")
+		conn, _ := listener.Accept()
+		listener.Close()
+
+		server := textproto.NewConn(conn)
+		defer server.Close()
+		server.Writer.PrintfLine("220 Service ready for new user.")
+
+		for {
+			if line, _ := server.ReadLine(); strings.HasPrefix(line, "STRU F") {
+				server.Writer.PrintfLine("200 Command okay.")
+			} else if strings.HasPrefix(line, "STRU") {
+				server.Writer.PrintfLine("504 Command not implemented for that parameter.")
+			}
+		}
+	}()
+	client, _ := NewFtpClient("localhost:8971")
+	if err := client.Structure(StruFile); err != nil ||
+		client.GetStructure() != StruFile {
+		t.Fatal(err)
+	}
+	if err := client.Structure('S'); err == nil ||
+		!errors.Is(err, ErrStruNotSupported) ||
+		client.GetStructure() != StruFile {
+		t.Fatal("should not change stru")
+	}
+}
+
 func TestRetrStreamMode(t *testing.T) {
 	os.Mkdir("_test_", 0777)
 	defer os.RemoveAll("_test_")
