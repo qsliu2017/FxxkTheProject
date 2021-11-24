@@ -1,4 +1,4 @@
-package server
+package fm
 
 import (
 	"io"
@@ -15,6 +15,10 @@ type MyFileManager interface {
 
 func SetFileManager(m MyFileManager) {
 	fileManager = m
+}
+
+func GetFile(path string) MyFile {
+	return fileManager.GetFile(path)
 }
 
 // Helper funcation for Java MyFile implementation to return a Golang io.EOF
