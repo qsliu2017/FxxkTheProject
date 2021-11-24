@@ -17,8 +17,14 @@ func SetFileManager(m MyFileManager) {
 	fileManager = m
 }
 
-func GetEOF() error {
-	return io.EOF
+// Helper funcation for Java MyFile implementation to return a Golang io.EOF
+func ReadEOF() (int, error) {
+	return 0, io.EOF
+}
+
+// Helper funcation for Java MyFile implementation to return a Golang io.EOF
+func WriteEOF() (int, error) {
+	return 0, io.EOF
 }
 
 var (
@@ -27,10 +33,9 @@ var (
 	fileManager         MyFileManager = _defaultFileManager
 )
 
-type _DefaultFileManager struct {
-}
+type _DefaultFileManager struct{}
 
-func (*_DefaultFileManager) GetFile(path string) MyFile {
+func (_DefaultFileManager) GetFile(path string) MyFile {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return nil
