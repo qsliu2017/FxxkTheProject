@@ -16,7 +16,7 @@ const (
 	CTRL_CONN_CLOSE           = 221
 	_                         = 225
 	_                         = 226
-	_                         = 227
+	StatusEnteringPasvMode    = 227
 	LOGIN_PROCEED             = 230
 	StatusFileActionCompleted = 250
 	_                         = 257
@@ -45,6 +45,7 @@ const (
 var codeMessages = map[int]string{
 	ALREADY_OPEN:              "Data connection already open; transfer starting.",
 	ABOUT_TO_DATA_CONN:        "File status okay; about to open data connection.",
+	StatusEnteringPasvMode:    "Entering Passive Mode (%d,%d,%d,%d,%d,%d).",
 	StatusFileActionCompleted: "Requested file action okay, completed.",
 	StatusParamNotImplemented: "Command not implemented for that parameter.",
 }

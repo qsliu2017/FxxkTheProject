@@ -9,12 +9,17 @@ import (
 	"net/textproto"
 	"os"
 	"path"
+	"regexp"
+	"strconv"
 )
 
 type FtpClient interface {
 	Login(username, password string) error
 	Logout() error
 	GetUsername() string
+
+	ConnMode(byte) error
+	GetConnMode() byte
 
 	Mode(mode byte) error
 	GetMode() byte
@@ -30,17 +35,24 @@ type FtpClient interface {
 }
 
 const (
+	ConnPasv byte = iota
+	ConnPort
+
 	ModeStream     byte = 'S'
 	ModeBlock      byte = 'B'
 	ModeCompressed byte = 'C'
-	TypeAscii      byte = 'A'
-	TypeBinary     byte = 'I'
-	StruFile       byte = 'F'
+
+	TypeAscii  byte = 'A'
+	TypeBinary byte = 'I'
+
+	StruFile byte = 'F'
 )
 
 var (
 	ErrUsernameNotExist     = errors.New("username does not exist")
 	ErrPasswordNotMatch     = errors.New("password does not match")
+	ErrConnModeNotSupported = errors.New("connection mode not supported")
+	ErrInvalidPasvResponse  = errors.New("invalid pasv response")
 	ErrModeNotSupported     = errors.New("mode not support")
 	ErrTypeNotSupported     = errors.New("type not support")
 	ErrStruNotSupported     = errors.New("stru not support")
@@ -67,6 +79,7 @@ func defaultFtpClient() *clientImpl {
 	return &clientImpl{
 		ctrlConn: nil,
 		username: "",
+		connMode: ConnPort,
 		mode:     ModeStream,
 		type_:    TypeAscii,
 		stru:     StruFile,
@@ -78,6 +91,7 @@ var _ FtpClient = (*clientImpl)(nil)
 type clientImpl struct {
 	ctrlConn *textproto.Conn
 	username string
+	connMode byte
 	mode     byte
 	type_    byte
 	stru     byte
@@ -129,6 +143,18 @@ func (client *clientImpl) Logout() error {
 
 func (client clientImpl) GetUsername() string {
 	return client.username
+}
+
+func (client *clientImpl) ConnMode(mode byte) error {
+	if mode != ConnPasv && mode != ConnPort {
+		return ErrConnModeNotSupported
+	}
+	client.connMode = mode
+	return nil
+}
+
+func (client clientImpl) GetConnMode() byte {
+	return client.connMode
 }
 
 func (client *clientImpl) Mode(mode byte) error {
@@ -358,6 +384,17 @@ func (client *clientImpl) Retrieve(local, remote string) error {
 }
 
 func (client *clientImpl) createDataConn() (net.Conn, error) {
+	switch client.connMode {
+	case ConnPasv:
+		return client.pasvDataConn()
+	case ConnPort:
+		return client.portDataConn()
+	default:
+		return nil, ErrConnModeNotSupported
+	}
+}
+
+func (client *clientImpl) portDataConn() (net.Conn, error) {
 	dataConnListener, err := net.ListenTCP("tcp4", nil)
 	if err != nil {
 		return nil, err
@@ -369,7 +406,7 @@ func (client *clientImpl) createDataConn() (net.Conn, error) {
 	if err := client.ctrlConn.Writer.PrintfLine(
 		cmd.PORT,
 		ip[0], ip[1], ip[2], ip[3],
-		(port / 256), (port % 256)); err != nil {
+		(port >> 8), (port & 0xff)); err != nil {
 		return nil, err
 	}
 
@@ -385,4 +422,38 @@ func (client *clientImpl) createDataConn() (net.Conn, error) {
 	}
 
 	return dataConn, nil
+}
+
+func (client *clientImpl) pasvDataConn() (net.Conn, error) {
+	if err := client.ctrlConn.Writer.PrintfLine(cmd.PASV); err != nil {
+		return nil, err
+	}
+
+	code, msg, err := client.ctrlConn.Reader.ReadCodeLine(cmd.StatusEnteringPasvMode)
+	if err != nil {
+		switch code {
+		}
+		return nil, err
+	}
+
+	addr, err := parsePasvResponse(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return net.DialTCP("tcp4", nil, &addr)
+}
+
+var AddrRegexp = regexp.MustCompile(`\(([0-9]+,[0-9]+,[0-9]+,[0-9]+),([0-9]+),([0-9]+)\)`)
+
+func parsePasvResponse(msg string) (net.TCPAddr, error) {
+	matches := AddrRegexp.FindStringSubmatch(msg)
+	if len(matches) != 4 {
+		return net.TCPAddr{}, ErrInvalidPasvResponse
+	}
+	ip := net.ParseIP(matches[1])
+	high, _ := strconv.Atoi(matches[2])
+	low, _ := strconv.Atoi(matches[3])
+	port := (high << 8) | low
+	return net.TCPAddr{IP: ip, Port: port}, nil
 }
