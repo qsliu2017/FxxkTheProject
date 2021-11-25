@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">FTPClient</string>
+    <string name="connect">Connect</string>
+    <string name="server_address_hint">Server Address</string>
+    <string name="download">Download</string>
+    <string name="login">Log In</string>
+    <string name="downloadLocal">Local File Name</string>
+    <string name="downloadRemote">Remote File Name</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="upload">Upload</string>
+    <string name="mode">Mode</string>
+    <string name="logout">Log Out</string>
+    <string name="stream">Stream Mode</string>
+    <string name="block">Block Mode</string>
+    <string name="compressed">Compressed Mode</string>
+    <string name="modeTitle">Choose a mode</string>
+    <string name="disConnect">Disconnect</string>
+</resources>
