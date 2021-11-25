@@ -8,28 +8,48 @@ import (
 	"strconv"
 )
 
-func createCtrlConn(addr string) (*textproto.Conn, error) {
+func (client *clientImpl) createCtrlConn(addr string) error {
 	conn, err := textproto.Dial("tcp", addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if _, _, err = conn.Reader.ReadCodeLine(cmd.SERVICE_READY); err != nil {
-		return nil, err
+		return err
 	}
 
-	return conn, nil
+	client.ctrlConn = conn
+
+	return nil
 }
 
-func (client *clientImpl) createDataConn() (net.Conn, error) {
+func (client *clientImpl) createDataConn() (err error) {
+	if client.dataConn != nil {
+		return nil
+	}
+
+	var conn net.Conn
 	switch client.connMode {
 	case ConnPasv:
-		return client.pasvDataConn()
+		conn, err = client.pasvDataConn()
 	case ConnPort:
-		return client.portDataConn()
+		conn, err = client.portDataConn()
 	default:
-		return nil, ErrConnModeNotSupported
+		err = ErrConnModeNotSupported
 	}
+
+	client.dataConn = conn
+
+	return
+
+}
+
+func (client *clientImpl) closeDataConn() (err error) {
+	if client.dataConn != nil {
+		err = client.dataConn.Close()
+		client.dataConn = nil
+	}
+	return
 }
 
 func (client *clientImpl) portDataConn() (net.Conn, error) {

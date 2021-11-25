@@ -1,6 +1,7 @@
 package client
 
 import (
+	"net"
 	"net/textproto"
 )
 
@@ -26,13 +27,11 @@ type FtpClient interface {
 }
 
 func NewFtpClient(addr string) (FtpClient, error) {
-	ctrlConn, err := createCtrlConn(addr)
-	if err != nil {
+	client := defaultFtpClient()
+
+	if err := client.createCtrlConn(addr); err != nil {
 		return nil, err
 	}
-
-	client := defaultFtpClient()
-	client.ctrlConn = ctrlConn
 
 	return client, nil
 }
@@ -40,6 +39,7 @@ func NewFtpClient(addr string) (FtpClient, error) {
 func defaultFtpClient() *clientImpl {
 	return &clientImpl{
 		ctrlConn: nil,
+		dataConn: nil,
 		username: "",
 		connMode: ConnPort,
 		mode:     ModeStream,
@@ -52,6 +52,7 @@ var _ FtpClient = (*clientImpl)(nil)
 
 type clientImpl struct {
 	ctrlConn *textproto.Conn
+	dataConn net.Conn
 	username string
 	connMode byte
 	mode     byte

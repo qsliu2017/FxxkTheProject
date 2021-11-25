@@ -43,11 +43,10 @@ func (client *clientImpl) storeSingleFile(local, remote string) error {
 	}
 	defer localFile.Close()
 
-	dataConn, err := client.createDataConn()
-	if err != nil {
+	if err := client.createDataConn(); err != nil {
 		return err
 	}
-	defer dataConn.Close()
+	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
 	if err := client.ctrlConn.Writer.PrintfLine("STOR %s", remote); err != nil {
 		return err
@@ -58,7 +57,7 @@ func (client *clientImpl) storeSingleFile(local, remote string) error {
 		return err
 	}
 
-	if _, err = io.Copy(dataConn, localFile); err != nil {
+	if _, err := io.Copy(client.dataConn, localFile); err != nil {
 		return err
 	}
 
@@ -133,11 +132,10 @@ func (client *clientImpl) Retrieve(local, remote string) error {
 	}
 	defer localFile.Close()
 
-	dataConn, err := client.createDataConn()
-	if err != nil {
+	if err := client.createDataConn(); err != nil {
 		return err
 	}
-	defer dataConn.Close()
+	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
 	if err := client.ctrlConn.Writer.PrintfLine("RETR %s", remote); err != nil {
 		return err
@@ -149,7 +147,7 @@ func (client *clientImpl) Retrieve(local, remote string) error {
 		return err
 	}
 
-	if _, err = io.Copy(localFile, dataConn); err != nil {
+	if _, err := io.Copy(localFile, client.dataConn); err != nil {
 		return err
 	}
 

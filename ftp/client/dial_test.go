@@ -51,6 +51,7 @@ func TestConnMode(t *testing.T) {
 	if <-serverConnChan != 3 {
 		t.Fatal("should get data connection from PORT command")
 	}
+	client.closeDataConn()
 
 	c.ConnMode(ConnPasv)
 	client.createDataConn()
