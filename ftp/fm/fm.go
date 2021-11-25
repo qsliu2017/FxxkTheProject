@@ -5,20 +5,23 @@ import (
 	"os"
 )
 
-type MyFile interface {
-	io.ReadWriteCloser
-}
+type MyFile io.ReadWriteCloser
 
 type MyFileManager interface {
-	GetFile(string) MyFile
+	Open(string) MyFile
+	Create(string) MyFile
 }
 
 func SetFileManager(m MyFileManager) {
 	fileManager = m
 }
 
-func GetFile(path string) MyFile {
-	return fileManager.GetFile(path)
+func OpenFile(path string) MyFile {
+	return fileManager.Open(path)
+}
+
+func CreateFile(path string) MyFile {
+	return fileManager.Create(path)
 }
 
 // Helper funcation for Java MyFile implementation to return a Golang io.EOF
@@ -39,8 +42,16 @@ var (
 
 type _DefaultFileManager struct{}
 
-func (_DefaultFileManager) GetFile(path string) MyFile {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
+func (_DefaultFileManager) Open(path string) MyFile {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	return f
+}
+
+func (_DefaultFileManager) Create(path string) MyFile {
+	f, err := os.Create(path)
 	if err != nil {
 		return nil
 	}
