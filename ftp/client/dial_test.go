@@ -33,8 +33,8 @@ func TestConnMode(t *testing.T) {
 				serverConnChan <- 2 // Got a PORT command from client
 				var h1, h2, h3, h4, p1, p2 int
 				fmt.Sscanf(line, "PORT %d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
-				dataConn, _ := net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, p1<<8+p2))
 				server.Writer.PrintfLine("200 Command okay.")
+				dataConn, _ := net.Dial("tcp", fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, p1<<8+p2))
 				serverConnChan <- 3 // Got a data connection from PORT port
 				dataConn.Close()
 			}

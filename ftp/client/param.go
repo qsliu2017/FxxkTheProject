@@ -44,16 +44,11 @@ func (client *clientImpl) Mode(mode byte) error {
 		return ErrModeNotSupported
 	}
 
-	if err := client.ctrlConn.Writer.PrintfLine("MODE %c", mode); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
-		switch code {
-		case cmd.StatusParamNotImplemented:
+	if code, msg, err := client.cmd(cmd.OK, "MODE %c", mode); err != nil {
+		if code == cmd.StatusParamNotImplemented {
 			return ErrModeNotSupported
 		}
-		return err
+		return errors.New(msg)
 	}
 
 	client.mode = mode
@@ -70,16 +65,11 @@ func (client *clientImpl) Type(type_ byte) error {
 		return ErrTypeNotSupported
 	}
 
-	if err := client.ctrlConn.Writer.PrintfLine("TYPE %c", type_); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
-		switch code {
-		case cmd.StatusParamNotImplemented:
+	if code, msg, err := client.cmd(cmd.OK, "TYPE %c", type_); err != nil {
+		if code == cmd.StatusParamNotImplemented {
 			return ErrTypeNotSupported
 		}
-		return err
+		return errors.New(msg)
 	}
 
 	client.type_ = type_
@@ -96,16 +86,11 @@ func (client *clientImpl) Structure(stru byte) error {
 		return ErrStruNotSupported
 	}
 
-	if err := client.ctrlConn.Writer.PrintfLine("STRU %c", stru); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.OK); err != nil {
-		switch code {
-		case cmd.StatusParamNotImplemented:
+	if code, msg, err := client.cmd(cmd.OK, "STRU %c", stru); err != nil {
+		if code == cmd.StatusParamNotImplemented {
 			return ErrStruNotSupported
 		}
-		return err
+		return errors.New(msg)
 	}
 
 	client.stru = stru

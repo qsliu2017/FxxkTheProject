@@ -34,13 +34,8 @@ func (client *clientImpl) storeStreamMode(local, remote string) error {
 		return err
 	}
 
-	if err := client.ctrlConn.Writer.PrintfLine("STOR %s", remote); err != nil {
-		return err
-	}
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.ALREADY_OPEN); err != nil {
-		switch code {
-		}
-		return err
+	if _, msg, err := client.cmd(cmd.ALREADY_OPEN, "STOR %s", remote); err != nil {
+		return errors.New(msg)
 	}
 
 	if _, err := io.Copy(bufio.NewWriter(client.dataConn), bufio.NewReader(localFile)); err != nil {
@@ -53,10 +48,8 @@ func (client *clientImpl) storeStreamMode(local, remote string) error {
 		return err
 	}
 
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.StatusFileActionCompleted); err != nil {
-		switch code {
-		}
-		return err
+	if _, msg, err := client.ctrlConn.Reader.ReadResponse(cmd.StatusFileActionCompleted); err != nil {
+		return errors.New(msg)
 	}
 
 	return nil
@@ -74,24 +67,16 @@ func (client *clientImpl) Retrieve(local, remote string) error {
 	}
 	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
-	if err := client.ctrlConn.Writer.PrintfLine("RETR %s", remote); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.ALREADY_OPEN); err != nil {
-		switch code {
-		}
-		return err
+	if _, msg, err := client.cmd(cmd.ALREADY_OPEN, "RETR %s", remote); err != nil {
+		return errors.New(msg)
 	}
 
 	if _, err := io.Copy(localFile, client.dataConn); err != nil {
 		return err
 	}
 
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.StatusFileActionCompleted); err != nil {
-		switch code {
-		}
-		return err
+	if _, msg, err := client.ctrlConn.Reader.ReadResponse(cmd.StatusFileActionCompleted); err != nil {
+		return errors.New(msg)
 	}
 
 	return nil
