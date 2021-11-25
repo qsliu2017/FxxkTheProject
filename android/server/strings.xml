@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">FTPServer</string>
+    <string name="start">Start Server</string>
+    <string name="stop">Stop Server</string>
+    <string name="port_hint">Port (>1024)</string>
+    <string name="logHeader">Log:</string>
+</resources>
