@@ -11,28 +11,18 @@ var (
 )
 
 func (client *clientImpl) Login(username, password string) error {
-	if err := client.ctrlConn.Writer.PrintfLine("USER %s", username); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.USERNAME_OK); err != nil {
-		switch code {
-		case cmd.NEED_ACCOUNT:
+	if code, msg, err := client.cmd(cmd.USERNAME_OK, "USER %s", username); err != nil {
+		if code == cmd.NEED_ACCOUNT {
 			return ErrUsernameNotExist
 		}
-		return err
+		return errors.New(msg)
 	}
 
-	if err := client.ctrlConn.Writer.PrintfLine("PASS %s", password); err != nil {
-		return err
-	}
-
-	if code, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.LOGIN_PROCEED); err != nil {
-		switch code {
-		case cmd.NOT_LOGIN:
+	if code, msg, err := client.cmd(cmd.LOGIN_PROCEED, "PASS %s", password); err != nil {
+		if code == cmd.NOT_LOGIN {
 			return ErrPasswordNotMatch
 		}
-		return err
+		return errors.New(msg)
 	}
 
 	client.username = username
@@ -41,12 +31,8 @@ func (client *clientImpl) Login(username, password string) error {
 }
 
 func (client *clientImpl) Logout() error {
-	if err := client.ctrlConn.Writer.PrintfLine("QUIT"); err != nil {
-		return err
-	}
-
-	if _, _, err := client.ctrlConn.Reader.ReadCodeLine(cmd.CTRL_CONN_CLOSE); err != nil {
-		return err
+	if _, msg, err := client.cmd(cmd.CTRL_CONN_CLOSE, "QUIT"); err != nil {
+		return errors.New(msg)
 	}
 
 	client.username = ""

@@ -4,8 +4,8 @@ import (
 	"ftp/cmd"
 	"net"
 	"net/textproto"
-	"regexp"
 	"strconv"
+	"strings"
 )
 
 func (client *clientImpl) createCtrlConn(addr string) error {
@@ -14,7 +14,7 @@ func (client *clientImpl) createCtrlConn(addr string) error {
 		return err
 	}
 
-	if _, _, err = conn.Reader.ReadCodeLine(cmd.SERVICE_READY); err != nil {
+	if _, _, err = conn.Reader.ReadResponse(cmd.SERVICE_READY); err != nil {
 		return err
 	}
 
@@ -59,12 +59,15 @@ func (client *clientImpl) portDataConn() (net.Conn, error) {
 	}
 	defer dataConnListener.Close()
 
-	addr := dataConnListener.Addr().(*net.TCPAddr)
-	ip, port := []byte(addr.IP.To4()), addr.Port
-	if err := client.ctrlConn.Writer.PrintfLine(
-		cmd.PORT,
-		ip[0], ip[1], ip[2], ip[3],
-		(port >> 8), (port & 0xff)); err != nil {
+	addr := dataConnListener.Addr().String()
+	idx := strings.Index(addr, ":")
+	hostParts := strings.Split(addr[:idx], ".")
+	portNum, _ := strconv.Atoi(addr[idx+1:])
+
+	if _, _, err := client.cmd(cmd.OK,
+		"PORT %s,%d,%d",
+		strings.Join(hostParts, ","),
+		portNum>>8, portNum&0xff); err != nil {
 		return nil, err
 	}
 
@@ -73,45 +76,40 @@ func (client *clientImpl) portDataConn() (net.Conn, error) {
 		return nil, err
 	}
 
-	if code, _, err := client.ctrlConn.ReadCodeLine(200); err != nil {
-		switch code {
-		}
-		return nil, err
-	}
-
 	return dataConn, nil
 }
 
 func (client *clientImpl) pasvDataConn() (net.Conn, error) {
-	if err := client.ctrlConn.Writer.PrintfLine(cmd.PASV); err != nil {
-		return nil, err
-	}
-
-	code, msg, err := client.ctrlConn.Reader.ReadCodeLine(cmd.StatusEnteringPasvMode)
-	if err != nil {
-		switch code {
-		}
-		return nil, err
-	}
-
-	addr, err := parsePasvResponse(msg)
+	_, msg, err := client.cmd(cmd.StatusEnteringPasvMode, cmd.PASV)
 	if err != nil {
 		return nil, err
 	}
 
-	return net.DialTCP("tcp4", nil, &addr)
-}
-
-var AddrRegexp = regexp.MustCompile(`\(([0-9]+,[0-9]+,[0-9]+,[0-9]+),([0-9]+),([0-9]+)\)`)
-
-func parsePasvResponse(msg string) (net.TCPAddr, error) {
-	matches := AddrRegexp.FindStringSubmatch(msg)
-	if len(matches) != 4 {
-		return net.TCPAddr{}, ErrInvalidPasvResponse
+	start, end := strings.Index(msg, "("), strings.LastIndex(msg, ")")
+	if start == -1 || end == -1 {
+		return nil, ErrInvalidPasvResponse
 	}
-	ip := net.ParseIP(matches[1])
-	high, _ := strconv.Atoi(matches[2])
-	low, _ := strconv.Atoi(matches[3])
-	port := (high << 8) | low
-	return net.TCPAddr{IP: ip, Port: port}, nil
+
+	data := strings.Split(msg[start+1:end], ",")
+	if len(data) != 6 {
+		return nil, ErrInvalidPasvResponse
+	}
+
+	host := strings.Join(data[:4], ".")
+
+	portPart1, err := strconv.Atoi(data[4])
+	if err != nil {
+		return nil, err
+	}
+
+	portPart2, err := strconv.Atoi(data[5])
+	if err != nil {
+		return nil, err
+	}
+
+	port := (portPart1 << 8) | portPart2
+
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+
+	return net.Dial("tcp4", addr)
 }

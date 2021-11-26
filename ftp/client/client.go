@@ -59,3 +59,11 @@ type clientImpl struct {
 	type_    byte
 	stru     byte
 }
+
+func (client *clientImpl) cmd(expect int, cmd string, args ...interface{}) (int, string, error) {
+	if _, err := client.ctrlConn.Cmd(cmd, args...); err != nil {
+		return 0, "", err
+	}
+
+	return client.ctrlConn.ReadResponse(expect)
+}
