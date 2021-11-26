@@ -43,7 +43,7 @@ func (server *_ServerImpl) Listen(port int) error {
 					logger.Printf("accepted connection from %s", conn.RemoteAddr())
 					// channel := make(chan bool)
 					// server.handlers[channel] = struct{}{}
-					go handleConn(&conn) //Todo: pass channel to goroutine
+					go handleClient(conn) //Todo: pass channel to goroutine
 				}
 			}
 		}()
