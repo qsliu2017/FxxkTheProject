@@ -2,6 +2,8 @@ package com.example.ftpclient
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -56,5 +58,36 @@ class DownloadActivity : AppCompatActivity(), View.OnClickListener {
                 }
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.conMode -> {
+                val intent = Intent(this, ConnModeActivity::class.java)
+                intent.putExtra("from", "download")
+                startActivity(intent)
+            }
+            R.id.dataMode -> {
+                val intent = Intent(this, ModeActivity::class.java)
+                intent.putExtra("from", "download")
+                startActivity(intent)
+            }
+            R.id.type -> {
+                val intent = Intent(this, TypeActivity::class.java)
+                intent.putExtra("from", "download")
+                startActivity(intent)
+            }
+            R.id.structure -> {
+                val intent = Intent(this, StructureActivity::class.java)
+                intent.putExtra("from", "download")
+                startActivity(intent)
+            }
+        }
+        return true
     }
 }

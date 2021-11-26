@@ -1,20 +1,19 @@
 package com.example.ftpclient
 
 import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import client.Client
-import kotlinx.android.synthetic.main.activity_mode.*
+import kotlinx.android.synthetic.main.activity_conn_mode.*
 
-class ModeActivity : AppCompatActivity(), View.OnClickListener {
+class ConnModeActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_mode)
-        streamBtn.setOnClickListener(this)
-        blockBtn.setOnClickListener(this)
-        compressedBtn.setOnClickListener(this)
+        setContentView(R.layout.activity_conn_mode)
+        portBtn.setOnClickListener(this)
+        passiveBtn.setOnClickListener(this)
     }
 
     override fun onClick(v: View?) {
@@ -45,28 +44,19 @@ class ModeActivity : AppCompatActivity(), View.OnClickListener {
         val fail = AlertDialog.Builder(this).setPositiveButton("OK", null)
 
         when (v?.id) {
-            R.id.streamBtn -> {
+            R.id.portBtn -> {
                 try {
-                    Connection.getCon()?.mode(Client.ModeStream)
-                    success.setMessage("Stream mode set").create().show()
+                    Connection.getCon()?.connMode(Client.ConnPort)
+                    success.setMessage("Port type set").create().show()
                 } catch (e: Exception) {
                     val error = Connection.exceptionHandle(e)
                     fail.setMessage(error).create().show()
                 }
             }
-            R.id.blockBtn -> {
+            R.id.passiveBtn -> {
                 try {
-                    Connection.getCon()?.mode(Client.ModeBlock)
-                   success.setMessage("Block mode set").create().show()
-                } catch (e: Exception) {
-                    val error = Connection.exceptionHandle(e)
-                    fail.setMessage(error).create().show()
-                }
-            }
-            R.id.compressedBtn -> {
-                try {
-                    Connection.getCon()?.mode(Client.ModeCompressed)
-                   success.setMessage("Compressed mode set").create().show()
+                    Connection.getCon()?.connMode(Client.ConnPasv)
+                    success.setMessage("Passive type set").create().show()
                 } catch (e: Exception) {
                     val error = Connection.exceptionHandle(e)
                     fail.setMessage(error).create().show()

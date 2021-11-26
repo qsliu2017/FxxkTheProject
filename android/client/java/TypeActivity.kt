@@ -6,15 +6,14 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import client.Client
-import kotlinx.android.synthetic.main.activity_mode.*
+import kotlinx.android.synthetic.main.activity_type.*
 
-class ModeActivity : AppCompatActivity(), View.OnClickListener {
+class TypeActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_mode)
-        streamBtn.setOnClickListener(this)
-        blockBtn.setOnClickListener(this)
-        compressedBtn.setOnClickListener(this)
+        setContentView(R.layout.activity_type)
+        ascBtn.setOnClickListener(this)
+        biBtn.setOnClickListener(this)
     }
 
     override fun onClick(v: View?) {
@@ -45,28 +44,19 @@ class ModeActivity : AppCompatActivity(), View.OnClickListener {
         val fail = AlertDialog.Builder(this).setPositiveButton("OK", null)
 
         when (v?.id) {
-            R.id.streamBtn -> {
+            R.id.ascBtn -> {
                 try {
-                    Connection.getCon()?.mode(Client.ModeStream)
-                    success.setMessage("Stream mode set").create().show()
+                    Connection.getCon()?.type(Client.TypeAscii)
+                    success.setMessage("Ascii type set").create().show()
                 } catch (e: Exception) {
                     val error = Connection.exceptionHandle(e)
                     fail.setMessage(error).create().show()
                 }
             }
-            R.id.blockBtn -> {
+            R.id.biBtn -> {
                 try {
-                    Connection.getCon()?.mode(Client.ModeBlock)
-                   success.setMessage("Block mode set").create().show()
-                } catch (e: Exception) {
-                    val error = Connection.exceptionHandle(e)
-                    fail.setMessage(error).create().show()
-                }
-            }
-            R.id.compressedBtn -> {
-                try {
-                    Connection.getCon()?.mode(Client.ModeCompressed)
-                   success.setMessage("Compressed mode set").create().show()
+                    Connection.getCon()?.type(Client.TypeBinary)
+                    success.setMessage("Binary type set").create().show()
                 } catch (e: Exception) {
                     val error = Connection.exceptionHandle(e)
                     fail.setMessage(error).create().show()

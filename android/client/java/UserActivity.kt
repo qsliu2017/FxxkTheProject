@@ -2,6 +2,8 @@ package com.example.ftpclient
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +15,6 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.activity_user)
         downloadBtn.setOnClickListener(this)
         uploadBtn.setOnClickListener(this)
-        modeBtn.setOnClickListener(this)
         logoutBtn.setOnClickListener(this)
     }
 
@@ -27,9 +28,6 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
             R.id.uploadBtn -> {
                 startActivity(Intent(this, UploadActivity::class.java))
             }
-            R.id.modeBtn -> {
-                startActivity(Intent(this, ModeActivity::class.java))
-            }
             R.id.logoutBtn -> {
                 AlertDialog.Builder(this).setMessage("Log out?")
                     .setPositiveButton("Yes"
@@ -40,5 +38,36 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
                     .setNegativeButton("No", null).create().show()
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.conMode -> {
+                val intent = Intent(this, ConnModeActivity::class.java)
+                intent.putExtra("from", "user")
+                startActivity(intent)
+            }
+            R.id.dataMode -> {
+                val intent = Intent(this, ModeActivity::class.java)
+                intent.putExtra("from", "user")
+                startActivity(intent)
+            }
+            R.id.type -> {
+                val intent = Intent(this, TypeActivity::class.java)
+                intent.putExtra("from", "user")
+                startActivity(intent)
+            }
+            R.id.structure -> {
+                val intent = Intent(this, StructureActivity::class.java)
+                intent.putExtra("from", "user")
+                startActivity(intent)
+            }
+        }
+        return true
     }
 }

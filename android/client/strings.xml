@@ -16,4 +16,17 @@
     <string name="compressed">Compressed Mode</string>
     <string name="modeTitle">Choose a mode</string>
     <string name="disConnect">Disconnect</string>
+    <string name="conMode">Connection Mode</string>
+    <string name="dataMode">Transfer Mode</string>
+    <string name="char_type">Char Type</string>
+    <string name="typeTitle">Choose a type</string>
+    <string name="ascii">Ascii</string>
+    <string name="binary">Binary</string>
+    <string name="connTitle">Choose a connection mode</string>
+    <string name="port">Port</string>
+    <string name="passive">Passive</string>
+    <string name="structure">Structure</string>
+    <string name="structureTitle">Choose a structure</string>
+    <string name="file">File</string>
+    <string name="other">Other</string>
 </resources>
