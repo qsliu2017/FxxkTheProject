@@ -10,6 +10,14 @@ import (
 )
 
 var (
+	__buffer []byte
+)
+
+func SetBuffer(buffer []byte) {
+	__buffer = buffer
+}
+
+var (
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
 
@@ -44,7 +52,7 @@ func (client *clientImpl) Store(local, remote string) (err error) {
 }
 
 func (client *clientImpl) storeStreamMode(localFile io.Reader) error {
-	if _, err := io.Copy(client.dataConn, localFile); err != nil {
+	if _, err := io.CopyBuffer(client.dataConn, localFile, __buffer); err != nil {
 		return err
 	}
 
@@ -103,7 +111,7 @@ func (client *clientImpl) Retrieve(local, remote string) (err error) {
 func (client *clientImpl) retrieveStreamMode(localFile io.Writer) error {
 	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
-	if _, err := io.Copy(localFile, client.dataConn); err != nil {
+	if _, err := io.CopyBuffer(localFile, client.dataConn, __buffer); err != nil {
 		return err
 	}
 

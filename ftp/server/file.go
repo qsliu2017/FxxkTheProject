@@ -7,6 +7,14 @@ import (
 )
 
 var (
+	_buffer []byte
+)
+
+func SetBuffer(buffer []byte) {
+	_buffer = buffer
+}
+
+var (
 	ErrModeNotSupported                = errors.New("mode not supported")
 	_                   commandHandler = (*clientHandler).handleRETR
 	_                   commandHandler = (*clientHandler).handleSTOR
@@ -43,7 +51,7 @@ func (c *clientHandler) handleRETR(param string) error {
 }
 
 func (c *clientHandler) retrieveStreamMode(localFile io.Reader) error {
-	if _, err := io.Copy(c.conn, localFile); err != nil {
+	if _, err := io.CopyBuffer(c.conn, localFile, _buffer); err != nil {
 		return err
 	}
 
@@ -88,7 +96,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 }
 
 func (c *clientHandler) storeStreamMode(localFile io.Writer) error {
-	if _, err := io.Copy(localFile, c.conn); err != nil {
+	if _, err := io.CopyBuffer(localFile, c.conn, _buffer); err != nil {
 		return err
 	}
 
