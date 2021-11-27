@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"errors"
 	"ftp/cmd"
 	"ftp/fm"
@@ -45,7 +44,7 @@ func (client *clientImpl) Store(local, remote string) (err error) {
 }
 
 func (client *clientImpl) storeStreamMode(localFile io.Reader) error {
-	if _, err := io.Copy(bufio.NewWriter(client.dataConn), bufio.NewReader(localFile)); err != nil {
+	if _, err := io.Copy(client.dataConn, localFile); err != nil {
 		return err
 	}
 

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"io"
 	"net"
 	"net/textproto"
@@ -11,7 +10,6 @@ import (
 type clientHandler struct {
 	ctrl *textproto.Conn
 	conn net.Conn
-	data *bufio.ReadWriter
 
 	login    bool
 	username string

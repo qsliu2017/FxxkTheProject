@@ -19,7 +19,7 @@ func (c *clientHandler) handleRETR(param string) error {
 	}
 	defer file.Close()
 
-	if c.data == nil {
+	if c.conn == nil {
 		return c.reply(StatusFileStatusOK)
 	}
 
@@ -43,23 +43,22 @@ func (c *clientHandler) handleRETR(param string) error {
 }
 
 func (c *clientHandler) retrieveStreamMode(localFile io.Reader) error {
-	if _, err := io.Copy(c.data, localFile); err != nil {
+	if _, err := io.Copy(c.conn, localFile); err != nil {
 		return err
 	}
 
 	c.conn.Close()
 	c.conn = nil
-	c.data = nil
 
 	return nil
 }
 
 func (c *clientHandler) retrieveBlockMode(localFile io.Reader) error {
-	return block.Send(c.data, localFile, 1<<10)
+	return block.Send(c.conn, localFile, 1<<10)
 }
 
 func (c *clientHandler) handleSTOR(param string) error {
-	if c.data == nil {
+	if c.conn == nil {
 		return c.reply(StatusFileStatusOK)
 	}
 
@@ -89,17 +88,16 @@ func (c *clientHandler) handleSTOR(param string) error {
 }
 
 func (c *clientHandler) storeStreamMode(localFile io.Writer) error {
-	if _, err := io.Copy(localFile, c.data); err != nil {
+	if _, err := io.Copy(localFile, c.conn); err != nil {
 		return err
 	}
 
 	c.conn.Close()
 	c.conn = nil
-	c.data = nil
 
 	return nil
 }
 
 func (c *clientHandler) storeBlockMode(localFile io.Writer) error {
-	return block.Receive(localFile, c.data)
+	return block.Receive(localFile, c.conn)
 }

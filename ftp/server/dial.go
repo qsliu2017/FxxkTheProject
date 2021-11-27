@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"net"
@@ -36,11 +35,6 @@ func (c *clientHandler) handlePORT(param string) error {
 
 	c.conn = conn
 
-	c.data = bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
-
 	return c.reply(StatusOK)
 }
 
@@ -68,11 +62,6 @@ func (c *clientHandler) handlePASV(param string) error {
 	}
 
 	c.conn = conn
-
-	c.data = bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
 
 	return nil
 }
