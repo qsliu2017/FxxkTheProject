@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/conMode"
+        android:title="@string/conMode" />
+    <item
+        android:id="@+id/dataMode"
+        android:title="@string/dataMode" />
+    <item
+        android:id="@+id/type"
+        android:title="@string/char_type" />
+    <item
+        android:id="@+id/structure"
+        android:title="@string/structure" />
+</menu>
