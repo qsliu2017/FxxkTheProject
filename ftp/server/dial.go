@@ -45,7 +45,7 @@ func (c *clientHandler) handlePORT(param string) error {
 }
 
 func (c *clientHandler) handlePASV(param string) error {
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.ListenTCP("tcp4", nil)
 	if err != nil {
 		return err
 	}
