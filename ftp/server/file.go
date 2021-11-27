@@ -69,7 +69,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 		return c.reply(StatusFileStatusOK)
 	}
 
-	file, err := os.OpenFile(path.Join(contextFilesDir, param), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
+	file, err := os.Create(path.Join(contextFilesDir, param))
 	if err != nil {
 		return c.reply(StatusFileUnavailable)
 	}

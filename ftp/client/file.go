@@ -72,7 +72,7 @@ func (client *clientImpl) storeBlockMode(localFile io.Reader) (err error) {
 }
 
 func (client *clientImpl) Retrieve(local, remote string) (err error) {
-	localFile, err := os.OpenFile(path.Join(contextFilesDir, local), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
+	localFile, err := os.Create(path.Join(contextFilesDir, local))
 	if err != nil {
 		return err
 	}
