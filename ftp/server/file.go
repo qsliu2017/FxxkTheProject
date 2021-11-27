@@ -6,9 +6,15 @@ import (
 	"io"
 )
 
-var (
-	_buffer []byte = make([]byte, 30*(1<<10))
-)
+type BufferManager interface {
+	Get() []byte
+}
+
+func SetBufferManager(manager BufferManager) {
+	bufferManager = manager
+}
+
+var bufferManager BufferManager
 
 var (
 	ErrModeNotSupported                = errors.New("mode not supported")
@@ -47,7 +53,7 @@ func (c *clientHandler) handleRETR(param string) error {
 }
 
 func (c *clientHandler) retrieveStreamMode(localFile io.Reader) error {
-	if _, err := io.CopyBuffer(c.conn, localFile, _buffer); err != nil {
+	if _, err := io.CopyBuffer(c.conn, localFile, bufferManager.Get()); err != nil {
 		return err
 	}
 
@@ -92,7 +98,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 }
 
 func (c *clientHandler) storeStreamMode(localFile io.Writer) error {
-	if _, err := io.CopyBuffer(localFile, c.conn, _buffer); err != nil {
+	if _, err := io.CopyBuffer(localFile, c.conn, bufferManager.Get()); err != nil {
 		return err
 	}
 

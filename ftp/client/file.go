@@ -9,9 +9,15 @@ import (
 	"io/fs"
 )
 
-var (
-	__buffer []byte = make([]byte, 30*(1<<10))
-)
+type BufferManager interface {
+	Get() []byte
+}
+
+func SetBufferManager(manager BufferManager) {
+	bufferManager = manager
+}
+
+var bufferManager BufferManager
 
 var (
 	ErrFileModeNotSupported = errors.New("file mode not support")
@@ -48,7 +54,7 @@ func (client *clientImpl) Store(local, remote string) (err error) {
 }
 
 func (client *clientImpl) storeStreamMode(localFile io.Reader) error {
-	if _, err := io.CopyBuffer(client.dataConn, localFile, __buffer); err != nil {
+	if _, err := io.CopyBuffer(client.dataConn, localFile, bufferManager.Get()); err != nil {
 		return err
 	}
 
@@ -107,7 +113,7 @@ func (client *clientImpl) Retrieve(local, remote string) (err error) {
 func (client *clientImpl) retrieveStreamMode(localFile io.Writer) error {
 	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
-	if _, err := io.CopyBuffer(localFile, client.dataConn, __buffer); err != nil {
+	if _, err := io.CopyBuffer(localFile, client.dataConn, bufferManager.Get()); err != nil {
 		return err
 	}
 
