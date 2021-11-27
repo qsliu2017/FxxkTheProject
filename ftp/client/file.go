@@ -3,30 +3,26 @@ package client
 import (
 	"errors"
 	"ftp/cmd"
-	"ftp/fm"
 	"ftp/fm/block"
 	"io"
-	"io/fs"
+	"os"
+	"path"
 )
 
-type BufferManager interface {
-	Get() []byte
-}
+var contextFilesDir string
 
-func SetBufferManager(manager BufferManager) {
-	bufferManager = manager
+func SetContextFilesDir(context string) {
+	contextFilesDir = context
 }
-
-var bufferManager BufferManager
 
 var (
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
 
 func (client *clientImpl) Store(local, remote string) (err error) {
-	localFile := fm.OpenFile(local)
-	if localFile == nil {
-		return fs.ErrNotExist
+	localFile, err := os.Open(path.Join(contextFilesDir, local))
+	if err != nil {
+		return err
 	}
 	defer localFile.Close()
 
@@ -54,7 +50,7 @@ func (client *clientImpl) Store(local, remote string) (err error) {
 }
 
 func (client *clientImpl) storeStreamMode(localFile io.Reader) error {
-	if _, err := io.CopyBuffer(client.dataConn, localFile, bufferManager.Get()); err != nil {
+	if _, err := io.Copy(client.dataConn, localFile); err != nil {
 		return err
 	}
 
@@ -76,9 +72,9 @@ func (client *clientImpl) storeBlockMode(localFile io.Reader) (err error) {
 }
 
 func (client *clientImpl) Retrieve(local, remote string) (err error) {
-	localFile := fm.CreateFile(local)
-	if localFile == nil {
-		return fs.ErrNotExist
+	localFile, err := os.OpenFile(path.Join(contextFilesDir, local), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
+	if err != nil {
+		return err
 	}
 	defer localFile.Close()
 
@@ -113,7 +109,7 @@ func (client *clientImpl) Retrieve(local, remote string) (err error) {
 func (client *clientImpl) retrieveStreamMode(localFile io.Writer) error {
 	defer client.closeDataConn() // In streaming mode, the data connection is closed after each file transfer.
 
-	if _, err := io.CopyBuffer(localFile, client.dataConn, bufferManager.Get()); err != nil {
+	if _, err := io.Copy(localFile, client.dataConn); err != nil {
 		return err
 	}
 

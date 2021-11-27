@@ -4,17 +4,15 @@ import (
 	"errors"
 	"ftp/fm/block"
 	"io"
+	"os"
+	"path"
 )
 
-type BufferManager interface {
-	Get() []byte
-}
+var contextFilesDir string
 
-func SetBufferManager(manager BufferManager) {
-	bufferManager = manager
+func SetContextFilesDir(context string) {
+	contextFilesDir = context
 }
-
-var bufferManager BufferManager
 
 var (
 	ErrModeNotSupported                = errors.New("mode not supported")
@@ -23,8 +21,8 @@ var (
 )
 
 func (c *clientHandler) handleRETR(param string) error {
-	file := OpenFile(param)
-	if file == nil {
+	file, err := os.Open(path.Join(contextFilesDir, param))
+	if err != nil {
 		return c.reply(StatusFileUnavailable)
 	}
 	defer file.Close()
@@ -35,7 +33,6 @@ func (c *clientHandler) handleRETR(param string) error {
 
 	c.reply(StatusTransferStarted)
 
-	var err error
 	switch c.mode {
 	case ModeStream:
 		err = c.retrieveStreamMode(file)
@@ -53,7 +50,7 @@ func (c *clientHandler) handleRETR(param string) error {
 }
 
 func (c *clientHandler) retrieveStreamMode(localFile io.Reader) error {
-	if _, err := io.CopyBuffer(c.conn, localFile, bufferManager.Get()); err != nil {
+	if _, err := io.Copy(c.conn, localFile); err != nil {
 		return err
 	}
 
@@ -72,15 +69,14 @@ func (c *clientHandler) handleSTOR(param string) error {
 		return c.reply(StatusFileStatusOK)
 	}
 
-	file := CreateFile(param)
-	if file == nil {
+	file, err := os.OpenFile(path.Join(contextFilesDir, param), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0660)
+	if err != nil {
 		return c.reply(StatusFileUnavailable)
 	}
 	defer file.Close()
 
 	c.reply(StatusTransferStarted)
 
-	var err error
 	switch c.mode {
 	case ModeStream:
 		err = c.storeStreamMode(file)
@@ -98,7 +94,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 }
 
 func (c *clientHandler) storeStreamMode(localFile io.Writer) error {
-	if _, err := io.CopyBuffer(localFile, c.conn, bufferManager.Get()); err != nil {
+	if _, err := io.Copy(localFile, c.conn); err != nil {
 		return err
 	}
 
