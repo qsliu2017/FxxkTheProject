@@ -50,7 +50,9 @@ var codeMessages = map[int]string{
 
 func (c *clientHandler) reply(code int, args ...interface{}) error {
 	if msg, has := codeMessages[code]; has {
-		return c.ctrl.PrintfLine("%d %s", code, fmt.Sprintf(msg, args...))
+		resp := fmt.Sprintf("%d %s", code, fmt.Sprintf(msg, args...))
+		logger.Printf("reply %s %s", c.username, resp)
+		return c.ctrl.PrintfLine(resp)
 	}
 	return ErrUnknownCode
 }
