@@ -52,6 +52,12 @@ func handleClient(conn net.Conn) {
 		} else {
 			param = part[1]
 		}
+
+		// Sometime it read a empty line. Skip it.
+		if len(part[0]) < 4 {
+			continue
+		}
+
 		if cmdHandler, has := commandHandlers[part[0]]; has {
 			logger.Printf("%s:%s %s", conn.RemoteAddr(), handler.username, cmd)
 			if err := cmdHandler(handler, param); err != nil {
