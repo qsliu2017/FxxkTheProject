@@ -35,6 +35,7 @@ func (c *clientHandler) handleRETR(param string) error {
 		return ErrModeNotSupported
 	}
 	if err != nil {
+		logger.Print(err)
 		return c.reply(StatusRequestedFileActionAborted)
 	}
 
@@ -80,6 +81,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 		return ErrModeNotSupported
 	}
 	if err != nil {
+		logger.Print(err)
 		return c.reply(StatusRequestedFileActionAborted)
 	}
 
