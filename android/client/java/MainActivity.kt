@@ -1,12 +1,15 @@
 package com.example.ftpclient
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import client.Client
+import fm.Fm
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -16,6 +19,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         downloadBtn.setOnClickListener(this)
         loginBtn.setOnClickListener(this)
         disConnectBtn.setOnClickListener(this)
+        Fm.setFileManager(
+            Connection.FileManagerImpl(
+                ContextCompat.getExternalFilesDirs(
+                    this,
+                    null
+                )[0]
+            )
+        )
+        Client.setBuffer(ByteArray(30 * 1024))
     }
 
     override fun onClick(v: View?) {
@@ -30,7 +42,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.disConnectBtn -> {
                 AlertDialog.Builder(this).setMessage("Disconnect?")
-                    .setPositiveButton("Yes"
+                    .setPositiveButton(
+                        "Yes"
                     ) { _, _ ->
                         Connection.getCon()?.logout()
                         startActivity(Intent(this, ConnectActivity::class.java))

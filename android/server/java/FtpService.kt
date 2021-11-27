@@ -43,6 +43,7 @@ class FtpService : Service() {
                 )[0]
             )
         )
+        Server.setBuffer(ByteArray(30 * 1024))
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

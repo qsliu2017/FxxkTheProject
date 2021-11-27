@@ -16,14 +16,6 @@ class DownloadActivity : AppCompatActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_download)
         downloadBtn.setOnClickListener(this)
-        Fm.setFileManager(
-            Connection.FileManagerImpl(
-                ContextCompat.getExternalFilesDirs(
-                    this,
-                    null
-                )[0]
-            )
-        )
     }
 
     override fun onClick(v: View?) {

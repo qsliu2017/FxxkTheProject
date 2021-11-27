@@ -3,8 +3,9 @@ package com.example.ftpserver
 import android.util.Log
 import android.widget.TextView
 import server.*
+import server.OutputStream
 import server.Server.readEOF
-import java.io.File
+import java.io.*
 
 object MyServer {
     private lateinit var myServer: FtpServer
@@ -33,24 +34,40 @@ object MyServer {
     }
 
     class FileManagerImpl(private val context: File) : MyFileManager {
-        override fun getFile(path: String): MyFile? {
-            // 返回一个FIleImpl
+//        fun getFile(path: String): MyFile? {
+//            // 返回一个FIleImpl
+//            val file = File(context, path)
+//            Log.d("File", file.path)
+//            if (!file.exists())
+//                return null
+//            return FileImpl(file)
+//        }
+
+        override fun create(path: String): MyFile {
             val file = File(context, path)
-            Log.d("File", file.path)
-            if (!file.exists())
-                return null
+            val pf = file.parentFile
+            if (!pf.exists()) {
+                pf.mkdir()
+            }
+            file.createNewFile()
+            return FileImpl(file)
+        }
+
+        override fun open(path: String): MyFile {
+            val file = File(context, path)
             return FileImpl(file)
         }
     }
 
     class FileImpl(private val file: File) : MyFile {
-        private var readOffset = 0
-        private val fileContent = file.readBytes()
-        private val fileLen = fileContent.size
+        private var fileBufferedInputStream: BufferedInputStream? = null
+        private var fileBufferedOutputStream: BufferedOutputStream? = null
 
         override fun write(content: ByteArray): Long {
+            if (fileBufferedOutputStream == null)
+                fileBufferedOutputStream = BufferedOutputStream(FileOutputStream(file))
             // 返回写入长度
-            file.writeBytes(content)
+            fileBufferedOutputStream?.write(content)
             return content.size.toLong()
         }
 
@@ -60,16 +77,13 @@ object MyServer {
         }
 
         override fun read(buffer: ByteArray): Long {
+            if (fileBufferedInputStream == null)
+                fileBufferedInputStream = BufferedInputStream(FileInputStream(file))
             // 写到ByteArray，返回写的长度
-            if (fileLen == readOffset)
+            if (fileBufferedInputStream?.available() == 0)
                 return readEOF()
-            var len = buffer.size
-            if (buffer.size > fileLen - readOffset)
-                len = fileLen - readOffset
-            val buf = file.readBytes()
-            buf.copyInto(buffer, 0, readOffset, readOffset + len)
-            readOffset += len
-            return buf.size.toLong()
+            val content = fileBufferedInputStream?.read(buffer)
+            return content?.toLong() ?: 0
         }
     }
 }
