@@ -7,12 +7,8 @@ import (
 )
 
 var (
-	_buffer []byte
+	_buffer []byte = make([]byte, 30*(1<<10))
 )
-
-func SetBuffer(buffer []byte) {
-	_buffer = buffer
-}
 
 var (
 	ErrModeNotSupported                = errors.New("mode not supported")
