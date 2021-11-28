@@ -9,22 +9,20 @@ import (
 	"path"
 )
 
-var contextFilesDir string
-
-func SetContextFilesDir(context string) {
-	contextFilesDir = context
-}
-
 var (
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
+
+func (client *clientImpl) SetRootDir(rootDir string) {
+	client.rootDir = rootDir
+}
 
 func (clientImpl) SetBlockSize(blockSize int64) {
 	block.SetBlockSize(blockSize)
 }
 
 func (client *clientImpl) Store(local, remote string) (err error) {
-	localFile, err := os.Open(path.Join(contextFilesDir, local))
+	localFile, err := os.Open(path.Join(client.rootDir, local))
 	if err != nil {
 		return err
 	}
@@ -76,7 +74,7 @@ func (client *clientImpl) storeBlockMode(localFile io.Reader) (err error) {
 }
 
 func (client *clientImpl) Retrieve(local, remote string) (err error) {
-	localFile, err := os.Create(path.Join(contextFilesDir, local))
+	localFile, err := os.Create(path.Join(client.rootDir, local))
 	if err != nil {
 		return err
 	}

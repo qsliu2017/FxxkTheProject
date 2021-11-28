@@ -17,9 +17,11 @@ type clientHandler struct {
 	mode  byte
 	type_ byte
 	stru  byte
+
+	rootDir string
 }
 
-func handleClient(conn net.Conn) {
+func handleClient(conn net.Conn, rootDir string) {
 	defer conn.Close()
 	handler := &clientHandler{
 		ctrl: textproto.NewConn(conn),
@@ -27,6 +29,8 @@ func handleClient(conn net.Conn) {
 		mode:  ModeStream,
 		type_: TypeAscii,
 		stru:  StruFile,
+
+		rootDir: rootDir,
 	}
 
 	handler.reply(StatusReady)

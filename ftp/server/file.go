@@ -8,12 +8,6 @@ import (
 	"path"
 )
 
-var contextFilesDir string
-
-func SetContextFilesDir(context string) {
-	contextFilesDir = context
-}
-
 var (
 	ErrModeNotSupported                = errors.New("mode not supported")
 	_                   commandHandler = (*clientHandler).handleRETR
@@ -21,7 +15,7 @@ var (
 )
 
 func (c *clientHandler) handleRETR(param string) error {
-	file, err := os.Open(path.Join(contextFilesDir, param))
+	file, err := os.Open(path.Join(c.rootDir, param))
 	if err != nil {
 		return c.reply(StatusFileUnavailable)
 	}
@@ -69,7 +63,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 		return c.reply(StatusFileStatusOK)
 	}
 
-	file, err := os.Create(path.Join(contextFilesDir, param))
+	file, err := os.Create(path.Join(c.rootDir, param))
 	if err != nil {
 		return c.reply(StatusFileUnavailable)
 	}

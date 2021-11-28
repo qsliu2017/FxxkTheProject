@@ -7,6 +7,7 @@ import (
 type FtpServer interface {
 	Listen(port int) error
 	Close() error
+	SetRootDir(string)
 }
 
 func NewFtpServer() FtpServer {
@@ -18,6 +19,7 @@ var _ FtpServer = (*_ServerImpl)(nil)
 type _ServerImpl struct {
 	laddr    *net.TCPAddr
 	listener *net.TCPListener
+	rootDir  string
 	// handlers map[chan<- bool]struct{} // notify all handlers to stop
 }
 
@@ -43,7 +45,7 @@ func (server *_ServerImpl) Listen(port int) error {
 					logger.Printf("accepted connection from %s", conn.RemoteAddr())
 					// channel := make(chan bool)
 					// server.handlers[channel] = struct{}{}
-					go handleClient(conn) //Todo: pass channel to goroutine
+					go handleClient(conn, server.rootDir) //Todo: pass channel to goroutine
 				}
 			}
 		}()
@@ -65,4 +67,8 @@ func (server *_ServerImpl) Close() error {
 		// server.handlers = nil
 		return nil
 	}
+}
+
+func (server *_ServerImpl) SetRootDir(dir string) {
+	server.rootDir = dir
 }

@@ -23,6 +23,7 @@ type FtpClient interface {
 	Structure(stru byte) error
 	GetStructure() byte
 
+	SetRootDir(string)
 	Store(local, remote string) error
 	Retrieve(local, remote string) error
 }
@@ -46,6 +47,7 @@ func defaultFtpClient() *clientImpl {
 		mode:     ModeStream,
 		type_:    TypeAscii,
 		stru:     StruFile,
+		rootDir:  "",
 	}
 }
 
@@ -59,6 +61,7 @@ type clientImpl struct {
 	mode     byte
 	type_    byte
 	stru     byte
+	rootDir  string
 }
 
 func (client *clientImpl) cmd(expect int, cmd string, args ...interface{}) (int, string, error) {
