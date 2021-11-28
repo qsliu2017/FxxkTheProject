@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"ftp/fm/block"
+	"ftp/block"
 	"io"
 	"os"
 	"path"
@@ -61,7 +61,7 @@ func (c *clientHandler) retrieveStreamMode(localFile io.Reader) error {
 }
 
 func (c *clientHandler) retrieveBlockMode(localFile io.Reader) error {
-	return block.Send(c.conn, localFile, 1<<10)
+	return block.Send(c.conn, localFile)
 }
 
 func (c *clientHandler) handleSTOR(param string) error {

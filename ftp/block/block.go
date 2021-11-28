@@ -8,6 +8,12 @@ import (
 	"io"
 )
 
+var _BlockSize int64 = 1 << 10
+
+func SetBlockSize(size int64) {
+	_BlockSize = size
+}
+
 // In block mode, each file is divided into blocks, and each block has a fixed size.
 // The conn is shared by all the files, the header is to spilt the file.
 type _BlockHdr struct {
@@ -24,8 +30,8 @@ var HashAlgorithm = func() hash.Hash64 { return fnv.New64() }
 var ErrBrokenBlock = errors.New("block broken")
 
 //Given a stream of data, pack it into one block, and write it to the writer w.
-func Send(dst io.Writer, src io.Reader, blockSize int64) (err error) {
-	binary.Write(dst, binary.BigEndian, _BlockHdr{blockSize})
+func Send(dst io.Writer, src io.Reader) (err error) {
+	binary.Write(dst, binary.BigEndian, _BlockHdr{_BlockSize})
 
 	r := io.TeeReader(src, dst)
 
@@ -35,7 +41,7 @@ func Send(dst io.Writer, src io.Reader, blockSize int64) (err error) {
 
 	for {
 		hasher.Reset()
-		if blockFtr.Length, err = io.CopyN(hasher, r, blockSize); err != nil {
+		if blockFtr.Length, err = io.CopyN(hasher, r, _BlockSize); err != nil {
 			if err == io.EOF {
 				break
 			}
@@ -46,7 +52,7 @@ func Send(dst io.Writer, src io.Reader, blockSize int64) (err error) {
 		binary.Write(dst, binary.BigEndian, blockFtr)
 	}
 
-	padding := make([]byte, blockSize-blockFtr.Length)
+	padding := make([]byte, _BlockSize-blockFtr.Length)
 	if _, err = dst.Write(padding); err != nil {
 		return err
 	}

@@ -2,8 +2,8 @@ package client
 
 import (
 	"errors"
+	"ftp/block"
 	"ftp/cmd"
-	"ftp/fm/block"
 	"io"
 	"os"
 	"path"
@@ -18,6 +18,10 @@ func SetContextFilesDir(context string) {
 var (
 	ErrFileModeNotSupported = errors.New("file mode not support")
 )
+
+func (clientImpl) SetBlockSize(blockSize int64) {
+	block.SetBlockSize(blockSize)
+}
 
 func (client *clientImpl) Store(local, remote string) (err error) {
 	localFile, err := os.Open(path.Join(contextFilesDir, local))
@@ -64,7 +68,7 @@ func (client *clientImpl) storeStreamMode(localFile io.Reader) error {
 }
 
 func (client *clientImpl) storeBlockMode(localFile io.Reader) (err error) {
-	if err := block.Send(client.dataConn, localFile, 1<<10); err != nil {
+	if err := block.Send(client.dataConn, localFile); err != nil {
 		return err
 	}
 

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"ftp/fm/block"
+	"ftp/block"
 	"io"
 	"net"
 	"net/textproto"
@@ -222,7 +222,7 @@ func TestRetrBlockMode(t *testing.T) {
 				}
 				server.Writer.PrintfLine("125 Data connection already open; transfer starting.")
 				f, _ := os.Open(path.Join("test_files", line[len("RETR "):]))
-				block.Send(dataConn, f, 1<<8)
+				block.Send(dataConn, f)
 				server.Writer.PrintfLine("250 Requested file action okay, completed.")
 				f.Close()
 				filesave <- true

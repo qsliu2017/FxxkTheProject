@@ -12,6 +12,7 @@ type FtpClient interface {
 
 	ConnMode(byte) error
 	GetConnMode() byte
+	SetBlockSize(int64)
 
 	Mode(mode byte) error
 	GetMode() byte

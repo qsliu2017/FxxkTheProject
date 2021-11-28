@@ -20,7 +20,7 @@ func TestBlock(t *testing.T) {
 		for _, file := range dir {
 			f, _ := os.Open(path.Join(dirName, file.Name()))
 			send <- true
-			err := Send(sender, f, 1<<10)
+			err := Send(sender, f)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -60,7 +60,7 @@ func BenchmarkBlock(b *testing.B) {
 			f, _ := os.Open(path.Join(dirName, dir[i%len(dir)].Name()))
 
 			b.StartTimer()
-			Send(sender, f, 1<<10)
+			Send(sender, f)
 			b.StopTimer()
 		}
 	}()
