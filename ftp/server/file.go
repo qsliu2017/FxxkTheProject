@@ -17,6 +17,7 @@ var (
 func (c *clientHandler) handleRETR(param string) error {
 	file, err := os.Open(path.Join(c.rootDir, param))
 	if err != nil {
+		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
 	}
 	defer file.Close()
@@ -65,6 +66,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 
 	file, err := os.Create(path.Join(c.rootDir, param))
 	if err != nil {
+		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
 	}
 	defer file.Close()
