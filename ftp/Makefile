@@ -6,7 +6,7 @@ aarsdir:
 	ls aars || mkdir aars
 
 client: aarsdir client/*
-	gomobile bind -v -o aars/client.aar ftp/client ftp/fm
+	gomobile bind -v -o aars/client.aar ftp/client
 
 server: aarsdir server/*
 	gomobile bind -v -o aars/server.aar ftp/server
