@@ -15,9 +15,7 @@ var (
 )
 
 func (c *clientHandler) handleRETR(param string) error {
-	p := path.Join(c.rootDir, param)
-	logger.Print("Try to open file ", p)
-	file, err := os.Open(p)
+	file, err := os.Open(path.Join(c.rootDir, param))
 	if err != nil {
 		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
@@ -67,7 +65,11 @@ func (c *clientHandler) handleSTOR(param string) error {
 	}
 
 	p := path.Join(c.rootDir, param)
-	logger.Print("Try to create file ", p)
+	if err := os.MkdirAll(path.Dir(p), 0666); err != nil {
+		logger.Print(err)
+		return c.reply(StatusFileUnavailable)
+	}
+
 	file, err := os.Create(p)
 	if err != nil {
 		logger.Print(err)
