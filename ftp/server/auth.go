@@ -9,8 +9,9 @@ var (
 	_            commandHandler = (*clientHandler).handleQUIT
 
 	account = map[string]string{
-		"test":    "test",
-		"pikachu": "winnie",
+		"test":      "test",
+		"pikachu":   "winnie",
+		"anonymous": "anonymous",
 	}
 )
 
