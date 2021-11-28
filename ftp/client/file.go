@@ -22,6 +22,45 @@ func (clientImpl) SetBlockSize(blockSize int64) {
 }
 
 func (client *clientImpl) Store(local, remote string) (err error) {
+	fs, err := os.Stat(path.Join(client.rootDir, local))
+	if err != nil {
+		return err
+	}
+	if fs.IsDir() {
+		return client.StoreDir(local, remote)
+	} else {
+		return client.StoreFile(local, remote)
+	}
+}
+
+func (client *clientImpl) StoreDir(localdir, remotedir string) error {
+	files, err := os.ReadDir(path.Join(client.rootDir, localdir))
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			if err := client.StoreDir(
+				path.Join(localdir, file.Name()),
+				path.Join(remotedir, file.Name()),
+			); err != nil {
+				return err
+			}
+		} else {
+			if err := client.StoreFile(
+				path.Join(localdir, file.Name()),
+				path.Join(remotedir, file.Name()),
+			); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (client *clientImpl) StoreFile(local, remote string) (err error) {
 	localFile, err := os.Open(path.Join(client.rootDir, local))
 	if err != nil {
 		return err
