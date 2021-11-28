@@ -15,7 +15,9 @@ var (
 )
 
 func (c *clientHandler) handleRETR(param string) error {
-	file, err := os.Open(path.Join(c.rootDir, param))
+	p := path.Join(c.rootDir, param)
+	logger.Print("Try to open file ", p)
+	file, err := os.Open(p)
 	if err != nil {
 		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
@@ -64,7 +66,9 @@ func (c *clientHandler) handleSTOR(param string) error {
 		return c.reply(StatusFileStatusOK)
 	}
 
-	file, err := os.Create(path.Join(c.rootDir, param))
+	p := path.Join(c.rootDir, param)
+	logger.Print("Try to create file ", p)
+	file, err := os.Create(p)
 	if err != nil {
 		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
