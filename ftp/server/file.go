@@ -65,7 +65,7 @@ func (c *clientHandler) handleSTOR(param string) error {
 	}
 
 	p := path.Join(c.rootDir, param)
-	if err := os.MkdirAll(path.Dir(p), 0666); err != nil {
+	if err := os.MkdirAll(path.Dir(p), 0777); err != nil {
 		logger.Print(err)
 		return c.reply(StatusFileUnavailable)
 	}

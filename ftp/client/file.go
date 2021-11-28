@@ -114,7 +114,7 @@ func (client *clientImpl) storeBlockMode(localFile io.Reader) (err error) {
 
 func (client *clientImpl) Retrieve(local, remote string) (err error) {
 	p := path.Join(client.rootDir, local)
-	if err := os.MkdirAll(path.Dir(p), 0666); err != nil {
+	if err := os.MkdirAll(path.Dir(p), 0777); err != nil {
 		return err
 	}
 
