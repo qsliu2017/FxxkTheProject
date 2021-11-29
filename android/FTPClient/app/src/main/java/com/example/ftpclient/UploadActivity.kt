@@ -7,8 +7,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import fm.Fm
 import kotlinx.android.synthetic.main.activity_upload.*
 
 class UploadActivity : AppCompatActivity(), View.OnClickListener {
@@ -26,6 +24,7 @@ class UploadActivity : AppCompatActivity(), View.OnClickListener {
 
                 // Upload a file
                 try {
+
                     Connection.getCon()?.store(local, remote)
                     AlertDialog.Builder(this).setMessage("Upload successfully!")
                         .setPositiveButton(
@@ -66,6 +65,11 @@ class UploadActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.structure -> {
                 val intent = Intent(this, StructureActivity::class.java)
+                intent.putExtra("from", "upload")
+                startActivity(intent)
+            }
+            R.id.information -> {
+                val intent = Intent(this, InformationActivity::class.java)
                 intent.putExtra("from", "upload")
                 startActivity(intent)
             }

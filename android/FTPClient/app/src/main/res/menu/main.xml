@@ -12,4 +12,7 @@
     <item
         android:id="@+id/structure"
         android:title="@string/structure" />
+    <item
+        android:id="@+id/information"
+        android:title="@string/information" />
 </menu>

@@ -12,7 +12,7 @@ import android.os.IBinder
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import server.Server
+import java.io.File
 
 class FtpService : Service() {
 
@@ -35,20 +35,20 @@ class FtpService : Service() {
         val notification = NotificationCompat.Builder(this, "ftp_service")
             .setContentIntent(pi).build()
         startForeground(1, notification)
-        Server.setFileManager(
-            MyServer.FileManagerImpl(
-                ContextCompat.getExternalFilesDirs(
-                    this,
-                    null
-                )[0]
-            )
-        )
-        Server.setBuffer(ByteArray(30 * 1024))
+        val path = ContextCompat.getExternalFilesDirs(this, null)[0].toString()
+        val file = File(path)
+        if (!file.exists())
+            file.createNewFile()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val port = intent?.getLongExtra("port", 5000)
-        val result = port?.let { MyServer.startServer(it) }
+        val result = port?.let {
+            MyServer.startServer(
+                it,
+                ContextCompat.getExternalFilesDirs(this, null)[0].toString()
+            )
+        }
         if (result == -1) {
             AlertDialog.Builder(this).setMessage("Fail to connect to the server")
                 .setPositiveButton("OK", null).create().show()

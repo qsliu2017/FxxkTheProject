@@ -61,6 +61,11 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
                 intent.putExtra("from", "login")
                 startActivity(intent)
             }
+            R.id.information -> {
+                val intent = Intent(this, InformationActivity::class.java)
+                intent.putExtra("from", "login")
+                startActivity(intent)
+            }
         }
         return true
     }

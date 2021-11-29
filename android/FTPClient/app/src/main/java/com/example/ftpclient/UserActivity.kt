@@ -16,6 +16,7 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
         downloadBtn.setOnClickListener(this)
         uploadBtn.setOnClickListener(this)
         logoutBtn.setOnClickListener(this)
+        testBtn.setOnClickListener(this)
     }
 
     override fun onClick(v: View?) {
@@ -27,6 +28,9 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.uploadBtn -> {
                 startActivity(Intent(this, UploadActivity::class.java))
+            }
+            R.id.testBtn -> {
+                startActivity(Intent(this, TestActivity::class.java))
             }
             R.id.logoutBtn -> {
                 AlertDialog.Builder(this).setMessage("Log out?")
@@ -64,6 +68,11 @@ class UserActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.structure -> {
                 val intent = Intent(this, StructureActivity::class.java)
+                intent.putExtra("from", "user")
+                startActivity(intent)
+            }
+            R.id.information -> {
+                val intent = Intent(this, InformationActivity::class.java)
                 intent.putExtra("from", "user")
                 startActivity(intent)
             }

@@ -29,4 +29,16 @@
     <string name="structureTitle">Choose a structure</string>
     <string name="file">File</string>
     <string name="other">Other</string>
+    <string name="testDownload">Test Download</string>
+    <string name="testUpload">Test Upload</string>
+    <string name="blockSize">Block Size</string>
+    <string name="test">Test</string>
+    <string name="information">Information</string>
+    <string name="connModeInfo">Connection Mode</string>
+    <string name="modeInfo">Mode</string>
+    <string name="typeInfo">Type</string>
+    <string name="struInfo">Structure</string>
+    <string name="userInfo">User</string>
+    <string name="ok">OK</string>
+    <string name="anonymous">Anonymous</string>
 </resources>

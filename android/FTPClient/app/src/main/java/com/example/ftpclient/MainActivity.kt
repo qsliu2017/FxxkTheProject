@@ -8,9 +8,8 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import client.Client
-import fm.Fm
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,15 +18,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         downloadBtn.setOnClickListener(this)
         loginBtn.setOnClickListener(this)
         disConnectBtn.setOnClickListener(this)
-        Fm.setFileManager(
-            Connection.FileManagerImpl(
-                ContextCompat.getExternalFilesDirs(
-                    this,
-                    null
-                )[0]
-            )
-        )
-        Client.setBuffer(ByteArray(30 * 1024))
+        anonymousBtn.setOnClickListener(this)
+        val path = ContextCompat.getExternalFilesDirs(this, null)[0].toString()
+        val file = File(path)
+        if (!file.exists())
+            file.createNewFile()
+        Connection.getCon()?.setRootDir(path)
     }
 
     override fun onClick(v: View?) {
@@ -39,6 +35,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.loginBtn -> {
                 startActivity(Intent(this, LoginActivity::class.java))
+            }
+            R.id.anonymousBtn -> {
+                try {
+                    Connection.getCon()?.login("anonymous", "anonymous")
+                    startActivity(Intent(this, UserActivity::class.java))
+                } catch (e: Exception) {
+                    val error = Connection.exceptionHandle(e)
+                    AlertDialog.Builder(this).setMessage(error)
+                        .setPositiveButton("OK", null).create().show()
+                }
             }
             R.id.disConnectBtn -> {
                 AlertDialog.Builder(this).setMessage("Disconnect?")
@@ -77,6 +83,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             R.id.structure -> {
                 val intent = Intent(this, StructureActivity::class.java)
+                intent.putExtra("from", "main")
+                startActivity(intent)
+            }
+            R.id.information -> {
+                val intent = Intent(this, InformationActivity::class.java)
                 intent.putExtra("from", "main")
                 startActivity(intent)
             }
